@@ -3,29 +3,58 @@ import Foundation
 extension Transaction {
     /// Парсит JSON-объект в Transaction
     /// - Parameter jsonObject: JSON-объект (Dictionary)
-    /// - Returns: Экземпляр Transaction или nil
-    static func parse(jsonObject: Any) -> Transaction? {
-        guard let dict = jsonObject as? [String: Any],
-            let id = dict["id"] as? Int,
-            let accountId = dict["accountId"] as? Int,
-            let categoryId = dict["categoryId"] as? Int,
-            let amountValue = dict["amount"] as? String,
-            let transactionDateString = dict["transactionDate"] as? String,
-            let createdAtString = dict["createdAt"] as? String,
-            let updatedAtString = dict["updatedAt"] as? String else {
-                return nil
+    /// - Returns: Экземпляр Transaction
+    /// - Throws: ParsingError в случае ошибок парсинга
+    static func parse(jsonObject: Any) throws -> Transaction {
+        guard let dict = jsonObject as? [String: Any] else {
+            throw ParsingError.invalidJSONStructure
+        }
+        
+        guard let id = dict["id"] as? Int else {
+            throw ParsingError.missingRequiredField("id")
+        }
+        
+        guard let accountId = dict["accountId"] as? Int else {
+            throw ParsingError.missingRequiredField("accountId")
+        }
+        
+        guard let categoryId = dict["categoryId"] as? Int else {
+            throw ParsingError.missingRequiredField("categoryId")
+        }
+        
+        guard let amountValue = dict["amount"] as? String else {
+            throw ParsingError.missingRequiredField("amount")
+        }
+        
+        guard let transactionDateString = dict["transactionDate"] as? String else {
+            throw ParsingError.missingRequiredField("transactionDate")
+        }
+        
+        guard let createdAtString = dict["createdAt"] as? String else {
+            throw ParsingError.missingRequiredField("createdAt")
+        }
+        
+        guard let updatedAtString = dict["updatedAt"] as? String else {
+            throw ParsingError.missingRequiredField("updatedAt")
         }
         
         guard let amount = Decimal(string: amountValue) else {
-            return nil
+            throw ParsingError.invalidAmountFormat(amountValue)
         }
         
         let dateFormatter = ISO8601DateFormatter()
-        guard let transactionDate = dateFormatter.date(from: transactionDateString),
-            let createdAt = dateFormatter.date(from: createdAtString),
-            let updatedAt = dateFormatter.date(from: updatedAtString) else {
-                return nil
-            }
+        
+        guard let transactionDate = dateFormatter.date(from: transactionDateString) else {
+            throw ParsingError.invalidDateFormat("transactionDate: \(transactionDateString)")
+        }
+        
+        guard let createdAt = dateFormatter.date(from: createdAtString) else {
+            throw ParsingError.invalidDateFormat("createdAt: \(createdAtString)")
+        }
+        
+        guard let updatedAt = dateFormatter.date(from: updatedAtString) else {
+            throw ParsingError.invalidDateFormat("updatedAt: \(updatedAtString)")
+        }
         
         let comment = dict["comment"] as? String
         
@@ -42,7 +71,7 @@ extension Transaction {
     }
     
     /// Возвращает JSON-представление транзакции
-    var jsonObject: Any {
+    var jsonObject: [String: Any] {
         let dateFormatter = ISO8601DateFormatter()
         var dict: [String: Any] = [
             "id": id,

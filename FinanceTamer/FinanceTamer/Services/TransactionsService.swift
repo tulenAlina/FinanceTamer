@@ -5,9 +5,13 @@ final class TransactionsService {
     private let cache: TransactionsFileCache
     private var nextId = 1
     
-    init(cache: TransactionsFileCache = TransactionsFileCache()) {
-        self.cache = cache
-        try? cache.loadFromFile()
+    init(cache: TransactionsFileCache = try! TransactionsFileCache()) {
+            self.cache = cache
+        }
+        
+    /// Загружает транзакции из файла
+    func loadTransactions() async throws {
+        try await cache.loadFromFile()
         nextId = (cache.transactions.map { $0.id }.max() ?? 0) + 1
     }
     
@@ -37,19 +41,19 @@ final class TransactionsService {
             updatedAt: Date()
         )
         nextId += 1
-        try cache.addTransaction(transaction)
+        try await cache.addTransaction(transaction)
         return transaction
     }
     
     /// Обновляет существующую транзакцию
     func updateTransaction(_ transaction: Transaction) async throws {
         try await Task.sleep(nanoseconds: 500_000_000) // Имитация задержки
-        try cache.addTransaction(transaction)
+        try await cache.addTransaction(transaction)
     }
     
     /// Удаляет транзакцию по ID
     func deleteTransaction(withId id: Int) async throws {
         try await Task.sleep(nanoseconds: 500_000_000) // Имитация задержки
-        try cache.removeTransaction(withId: id)
+        try await cache.removeTransaction(withId: id)
     }
 }
