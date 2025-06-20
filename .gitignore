@@ -38,3 +38,7 @@ Carthage/Build/
 # Other
 *.swp
 *.swo
+
+# Ignore other system files
+*.bak
+*.orig
