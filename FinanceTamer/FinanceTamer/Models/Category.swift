@@ -32,11 +32,7 @@ struct Category: Identifiable, Codable, Hashable {
         
         let emojiString = try container.decode(String.self, forKey: .emoji)
         guard let emojiChar = emojiString.first else {
-            throw DecodingError.dataCorruptedError(
-                forKey: .emoji,
-                in: container,
-                debugDescription: "emoji string is empty"
-            )
+            throw ParsingError.invalidDataFormat("emoji string is empty")
         }
         self.emoji = emojiChar
         

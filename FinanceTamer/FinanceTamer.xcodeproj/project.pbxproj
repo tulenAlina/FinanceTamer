@@ -23,6 +23,10 @@
 		8766178D2DFB971E008001B4 /* Transaction+CSV.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766178C2DFB971E008001B4 /* Transaction+CSV.swift */; };
 		876617982DFB9A00008001B4 /* FinanceTamerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 876617972DFB9A00008001B4 /* FinanceTamerTests.swift */; };
 		8766179F2DFB9A1B008001B4 /* TransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766179E2DFB9A1B008001B4 /* TransactionTests.swift */; };
+		87B750482E05B19B000C66F2 /* AppErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B750472E05B196000C66F2 /* AppErrors.swift */; };
+		87B7504A2E05B1A4000C66F2 /* ParsingErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B750492E05B1A2000C66F2 /* ParsingErrors.swift */; };
+		87B7504E2E05D91A000C66F2 /* FileErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7504D2E05D902000C66F2 /* FileErrors.swift */; };
+		87B750502E060BF5000C66F2 /* Currency.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7504F2E060BE8000C66F2 /* Currency.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -54,6 +58,10 @@
 		876617952DFB9A00008001B4 /* FinanceTamerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinanceTamerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		876617972DFB9A00008001B4 /* FinanceTamerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceTamerTests.swift; sourceTree = "<group>"; };
 		8766179E2DFB9A1B008001B4 /* TransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTests.swift; sourceTree = "<group>"; };
+		87B750472E05B196000C66F2 /* AppErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppErrors.swift; sourceTree = "<group>"; };
+		87B750492E05B1A2000C66F2 /* ParsingErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsingErrors.swift; sourceTree = "<group>"; };
+		87B7504D2E05D902000C66F2 /* FileErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileErrors.swift; sourceTree = "<group>"; };
+		87B7504F2E060BE8000C66F2 /* Currency.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Currency.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,6 +103,7 @@
 		876617672DFB0C2A008001B4 /* FinanceTamer */ = {
 			isa = PBXGroup;
 			children = (
+				87B750462E05B178000C66F2 /* Errors */,
 				876617792DFB1928008001B4 /* Utilities */,
 				876617782DFB1917008001B4 /* Extensions */,
 				876617772DFB1906008001B4 /* Services */,
@@ -118,6 +127,7 @@
 		876617762DFB18F3008001B4 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				87B7504F2E060BE8000C66F2 /* Currency.swift */,
 				8766177A2DFB199D008001B4 /* Direction.swift */,
 				8766177C2DFB19C2008001B4 /* Category.swift */,
 				8766177E2DFB4797008001B4 /* BankAccount.swift */,
@@ -160,6 +170,16 @@
 				8766179E2DFB9A1B008001B4 /* TransactionTests.swift */,
 			);
 			path = FinanceTamerTests;
+			sourceTree = "<group>";
+		};
+		87B750462E05B178000C66F2 /* Errors */ = {
+			isa = PBXGroup;
+			children = (
+				87B7504D2E05D902000C66F2 /* FileErrors.swift */,
+				87B750492E05B1A2000C66F2 /* ParsingErrors.swift */,
+				87B750472E05B196000C66F2 /* AppErrors.swift */,
+			);
+			path = Errors;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -208,7 +228,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1430;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					876617642DFB0C2A008001B4 = {
 						CreatedOnToolsVersion = 14.3.1;
@@ -263,10 +283,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				876617832DFB7B1B008001B4 /* Transaction+JSON.swift in Sources */,
+				87B7504A2E05B1A4000C66F2 /* ParsingErrors.swift in Sources */,
+				87B750482E05B19B000C66F2 /* AppErrors.swift in Sources */,
 				8766176B2DFB0C2A008001B4 /* ContentView.swift in Sources */,
+				87B750502E060BF5000C66F2 /* Currency.swift in Sources */,
 				876617692DFB0C2A008001B4 /* FinanceTamerApp.swift in Sources */,
 				876617892DFB8DB7008001B4 /* BankAccountsService.swift in Sources */,
 				876617852DFB7F05008001B4 /* TransactionsFileCache.swift in Sources */,
+				87B7504E2E05D91A000C66F2 /* FileErrors.swift in Sources */,
 				8766178D2DFB971E008001B4 /* Transaction+CSV.swift in Sources */,
 				876617812DFB529B008001B4 /* Transaction.swift in Sources */,
 				8766177B2DFB199D008001B4 /* Direction.swift in Sources */,
@@ -331,8 +355,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = FUBF9ZAVPM;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -391,8 +417,10 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = FUBF9ZAVPM;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -419,7 +447,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"FinanceTamer/Preview Content\"";
-				DEVELOPMENT_TEAM = FUBF9ZAVPM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -448,7 +475,6 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_ASSET_PATHS = "\"FinanceTamer/Preview Content\"";
-				DEVELOPMENT_TEAM = FUBF9ZAVPM;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -475,7 +501,6 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FUBF9ZAVPM;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = some.FinanceTamerTests;
@@ -493,7 +518,6 @@
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = FUBF9ZAVPM;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = some.FinanceTamerTests;

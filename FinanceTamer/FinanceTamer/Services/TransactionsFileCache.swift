@@ -1,60 +1,86 @@
-
 import Foundation
 
-/// Кэш для хранения транзакций в JSON-файле
+/// Кэш для хранения транзакций в JSON-файле с использованием async/await
 final class TransactionsFileCache {
     // MARK: - Properties
     
     private(set) var transactions: [Transaction] = []
     private let fileURL: URL
-    private let queue = DispatchQueue(label: "com.financetamer.transactionsCache", qos: .userInitiated)
     
     // MARK: - Initialization
     
-    init(filename: String = "transactions") {
-        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        self.fileURL = documentsDirectory.appendingPathComponent("\(filename).json")
-    }
+    init(filename: String = "transactions") throws {
+            guard let supportDir = FileManager.default.urls(
+                for: .applicationSupportDirectory,
+                in: .userDomainMask
+            ).first else {
+                throw FileError.directoryUnavailable
+            }
+            
+            self.fileURL = supportDir.appendingPathComponent("\(filename).json")
+            
+            // Создание директории, если нужно
+            if !FileManager.default.fileExists(atPath: supportDir.path) {
+                try FileManager.default.createDirectory(
+                    at: supportDir,
+                    withIntermediateDirectories: true
+                )
+            }
+        }
     
     // MARK: - Public Methods
     
     /// Добавляет или обновляет транзакцию
-    func addTransaction(_ transaction: Transaction) throws {
-        try queue.sync {
+    func addTransaction(_ transaction: Transaction) async throws {
+        try await Task {
             if let index = transactions.firstIndex(where: { $0.id == transaction.id }) {
                 transactions[index] = transaction
             } else {
                 transactions.append(transaction)
             }
-            try saveToFile()
-        }
+            try await saveToFile()
+        }.value
     }
     
     /// Удаляет транзакцию по ID
-    func removeTransaction(withId id: Int) throws {
-        try queue.sync {
+    func removeTransaction(withId id: Int) async throws {
+        try await Task {
             transactions.removeAll { $0.id == id }
-            try saveToFile()
-        }
+            try await saveToFile()
+        }.value
     }
     
     /// Сохраняет все транзакции в файл
-    func saveToFile() throws {
+    func saveToFile() async throws {
         let jsonObjects = transactions.map { $0.jsonObject }
         let data = try JSONSerialization.data(withJSONObject: jsonObjects, options: .prettyPrinted)
-        try data.write(to: fileURL, options: .atomic)
+        try await writeDataToFile(data)
     }
     
     /// Загружает транзакции из файла
-    func loadFromFile() throws {
+    func loadFromFile() async throws {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
             transactions = []
             return
         }
         
-        let data = try Data(contentsOf: fileURL)
+        let data = try await readDataFromFile()
         let jsonObjects = try JSONSerialization.jsonObject(with: data) as? [Any] ?? []
         
-        transactions = jsonObjects.compactMap { Transaction.parse(jsonObject: $0) }
+        transactions = try jsonObjects.map { try Transaction.parse(jsonObject: $0) }
+    }
+    
+    // MARK: - Private Helpers
+    
+    private func writeDataToFile(_ data: Data) async throws {
+        try await Task.detached(priority: .utility) {
+            try data.write(to: self.fileURL, options: .atomic)
+        }.value
+    }
+    
+    private func readDataFromFile() async throws -> Data {
+        try await Task.detached(priority: .utility) {
+            try Data(contentsOf: self.fileURL)
+        }.value
     }
 }
