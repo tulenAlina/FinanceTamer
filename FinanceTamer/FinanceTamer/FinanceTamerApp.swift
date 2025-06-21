@@ -4,10 +4,7 @@ import SwiftUI
 struct FinanceTamerApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
-                .onAppear {
-                    
-                }
+            TabBarView()
         }
     }
 }

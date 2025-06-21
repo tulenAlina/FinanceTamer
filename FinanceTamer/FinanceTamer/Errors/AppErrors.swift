@@ -1,6 +1,5 @@
 import Foundation
 
-/// Общие ошибки приложения
 enum AppError: Error, LocalizedError {
     case notFound
     case invalidData
