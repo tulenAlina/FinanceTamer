@@ -60,14 +60,24 @@ final class TransactionsFileCache {
     /// Загружает транзакции из файла
     func loadFromFile() async throws {
         guard FileManager.default.fileExists(atPath: fileURL.path) else {
-            transactions = []
+            // Создаем тестовые данные при первом запуске
+            let today = Date()
+            let calendar = Calendar.current
+            let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+            
+            transactions = TransactionsService().mockTransactions
+            try await saveToFile()
             return
         }
         
-        let data = try await readDataFromFile()
-        let jsonObjects = try JSONSerialization.jsonObject(with: data) as? [Any] ?? []
-        
-        transactions = try jsonObjects.map { try Transaction.parse(jsonObject: $0) }
+        do {
+            let data = try await readDataFromFile()
+            let jsonObjects = try JSONSerialization.jsonObject(with: data) as? [Any] ?? []
+            transactions = try jsonObjects.map { try Transaction.parse(jsonObject: $0) }
+        } catch {
+            transactions = []
+            throw error
+        }
     }
     
     // MARK: - Private Helpers

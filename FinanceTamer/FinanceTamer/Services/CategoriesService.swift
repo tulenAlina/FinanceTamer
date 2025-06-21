@@ -2,7 +2,7 @@ import Foundation
 
 /// Сервис для работы с категориями
 final class CategoriesService {
-    private var mockCategories: [Category] = [
+    var mockCategories: [Category] = [
         Category(id: 1, name: "Зарплата", emoji: "💰", direction: .income),
         Category(id: 2, name: "Подарок", emoji: "🎁", direction: .income),
         Category(id: 3, name: "Продукты", emoji: "🛒", direction: .outcome),

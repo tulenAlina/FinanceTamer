@@ -3,7 +3,15 @@ import Foundation
 /// Сервис для работы с банковскими счетами
 final class BankAccountsService {
     private var mockAccounts: [BankAccount] = [
-        BankAccount(id: 1, userId: 1, name: "Основной счёт", balance: 10000, currency: .rub, createdAt: Date(), updatedAt: Date())
+        BankAccount(
+            id: 1,
+            userId: 1,
+            name: "Основной счёт",
+            balance: 10000,
+            currency: .rub,
+            createdAt: Date(),
+            updatedAt: Date()
+        )
     ]
     
     /// Получает основной счет пользователя

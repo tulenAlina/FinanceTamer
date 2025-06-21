@@ -1,7 +1,6 @@
 
 import Foundation
 
-/// Ошибки парсинга данных
 enum ParsingError: Error, LocalizedError {
     case invalidJSONStructure
     case missingRequiredField(String)
