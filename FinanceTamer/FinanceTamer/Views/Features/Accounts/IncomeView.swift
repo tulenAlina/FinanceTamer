@@ -1,26 +1,16 @@
 import SwiftUI
 
 struct IncomeView: View {
-    @StateObject private var viewModel: TransactionsViewModel
-    
-    init() {
-        let transactionsService = TransactionsService()
-        let categoriesService = CategoriesService()
-        _viewModel = StateObject(
-            wrappedValue: TransactionsViewModel(
-                transactionsService: transactionsService,
-                categoriesService: categoriesService,
-                selectedDirection: .income
-            )
-        )
-    }
+    private let transactionsService = TransactionsService()
+    private let categoriesService = CategoriesService()
     
     var body: some View {
         NavigationStack {
             ZStack {
-                // Основной контент
                 TransactionsListView(
-                    viewModel: viewModel,
+                    transactionsService: transactionsService,
+                    categoriesService: categoriesService,
+                    direction: .income,
                     title: "Доходы сегодня"
                 )
                 
@@ -46,7 +36,7 @@ struct IncomeView: View {
                     .padding(.bottom, 28)
                 }
             }
-            .toolbar { 
+            .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     NavigationLink {
                         IncomeHistoryView()

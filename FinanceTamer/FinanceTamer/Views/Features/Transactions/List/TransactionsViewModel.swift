@@ -8,7 +8,13 @@ final class TransactionsViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var isLoading = false
     @Published var error: Error?
-    @Published var selectedDirection: Direction = .outcome {
+    @Published var sortType: SortType = .dateDescending {
+        didSet {
+            sortTransactions()
+        }
+    }
+    
+    var selectedDirection: Direction = .outcome {
         didSet {
             filterTransactions()
         }
@@ -27,7 +33,11 @@ final class TransactionsViewModel: ObservableObject {
         return NumberFormatter.currency.string(from: NSDecimalNumber(decimal: total)) ?? "0 ₽"
     }
     
-    init(transactionsService: TransactionsService, categoriesService: CategoriesService, selectedDirection: Direction) {
+    init(
+        transactionsService: TransactionsService,
+        categoriesService: CategoriesService,
+        selectedDirection: Direction
+    ) {
         self.transactionsService = transactionsService
         self.categoriesService = categoriesService
         self.selectedDirection = selectedDirection
@@ -38,10 +48,9 @@ final class TransactionsViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            let todayInterval = Date.todayInterval()
-            print("Загрузка транзакций за интервал: \(todayInterval)")
-            
-            let transactions = try await transactionsService.getTransactions(for: todayInterval.lowerBound...todayInterval.upperBound)
+            let endDate = Date()
+            let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate)!
+            let transactions = try await transactionsService.getTransactions(for: startDate...endDate)
             print("Загружено транзакций: \(transactions.count)")
             
             let categories = try await categoriesService.categories()
@@ -103,10 +112,24 @@ final class TransactionsViewModel: ObservableObject {
         }
     }
     
+    private func sortTransactions() {
+            switch sortType {
+            case .dateAscending:
+                displayedTransactions.sort { $0.transactionDate < $1.transactionDate }
+            case .dateDescending:
+                displayedTransactions.sort { $0.transactionDate > $1.transactionDate }
+            case .amountAscending:
+                displayedTransactions.sort { abs($0.amount) < abs($1.amount) }
+            case .amountDescending:
+                displayedTransactions.sort { abs($0.amount) > abs($1.amount) }
+            }
+        }
+    
     private func filterTransactions() {
         displayedTransactions = allTransactions.filter { transaction in
-            guard let category = category(for: transaction) else { return false }
+            guard let category = category(for: transaction) else {return false }
             return category.direction == selectedDirection
         }
-    }
+        sortTransactions()
+        }
 }

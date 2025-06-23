@@ -1,26 +1,46 @@
 import SwiftUI
 
 struct TransactionsListView: View {
+    @StateObject private var viewModel: TransactionsViewModel
+    private let title: String
     
-    @ObservedObject private var viewModel: TransactionsViewModel
-    var title: String
-    
-    init(viewModel: TransactionsViewModel, title: String) {
-        self.viewModel = viewModel
+    init(
+        transactionsService: TransactionsService,
+        categoriesService: CategoriesService,
+        direction: Direction,
+        title: String
+    ) {
+        self._viewModel = StateObject(
+            wrappedValue: TransactionsViewModel(
+                transactionsService: transactionsService,
+                categoriesService: categoriesService,
+                selectedDirection: direction
+            )
+        )
         self.title = title
     }
     
     var body: some View {
-
-        ZStack {
-            List {
-                Section {
-                    ListRowView(
-                        categoryName: "Всего",
-                        transactionAmount: viewModel.totalAmountToday,
-                        needChevron: false
-                    )
-                } header: {
+            ZStack {
+                List {
+                    Section {
+                        HStack {
+                            Text("Сортировка")
+                            Spacer()
+                            Picker("", selection: $viewModel.sortType) {
+                                ForEach(SortType.allCases) { type in
+                                    Text(type.rawValue).tag(type)
+                                }
+                            }
+                            .pickerStyle(.menu)
+                        }
+                        
+                        ListRowView(
+                            categoryName: "Всего",
+                            transactionAmount: viewModel.totalAmountToday,
+                            needChevron: false
+                        )
+                    } header: {
                     Text(title)
                         .font(.system(size: 34, weight: .bold))
                         .foregroundStyle(.black)
@@ -70,5 +90,10 @@ struct TransactionsListView: View {
 }
 
 #Preview {
-    TransactionsListView(viewModel: TransactionsViewModel(transactionsService: TransactionsService(), categoriesService: CategoriesService(), selectedDirection: .outcome), title: "Расходы сегодня")
+    TransactionsListView(
+        transactionsService: TransactionsService(),
+        categoriesService: CategoriesService(),
+        direction: .outcome,
+        title: "Расходы сегодня"
+    )
 }

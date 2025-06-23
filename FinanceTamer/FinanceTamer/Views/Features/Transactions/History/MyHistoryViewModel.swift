@@ -1,8 +1,11 @@
 import SwiftUI
 
 enum SortType: String, CaseIterable, Identifiable {
-    case date = "По дате"
-    case amount = "По сумме"
+    case dateAscending = "Дата (сначала старые)"
+    case dateDescending = "Дата (сначала новые)"
+    case amountAscending = "Сумма (по возрастанию)"
+    case amountDescending = "Сумма (по убыванию)"
+    
     var id: String { self.rawValue }
 }
 
@@ -19,18 +22,22 @@ final class MyHistoryViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var isLoading = false
     @Published var error: Error?
-    @Published var sortType: SortType = .date
+    @Published var sortType: SortType = .dateAscending
     
     private let transactionsService: TransactionsService
     private let categoriesService: CategoriesService
     
     var sortedTransactions: [Transaction] {
         switch sortType {
-        case .date:
-            return displayedTransactions.sorted { $0.transactionDate > $1.transactionDate }
-        case .amount:
-            return displayedTransactions.sorted { $0.amount > $1.amount }
-        }
+            case .dateAscending:
+                return displayedTransactions.sorted { $0.transactionDate < $1.transactionDate }
+            case .dateDescending:
+                return displayedTransactions.sorted { $0.transactionDate > $1.transactionDate }
+            case .amountAscending:
+                return displayedTransactions.sorted { abs($0.amount) < abs($1.amount) }
+            case .amountDescending:
+                return displayedTransactions.sorted { abs($0.amount) > abs($1.amount) }
+                }
     }
     
     init(transactionsService: TransactionsService, categoriesService: CategoriesService,  selectedDirection: Direction) {

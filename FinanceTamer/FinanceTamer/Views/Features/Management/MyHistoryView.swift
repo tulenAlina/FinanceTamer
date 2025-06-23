@@ -77,20 +77,17 @@ struct MyHistoryView: View {
     }
     
     private var sortingPicker: some View {
-        HStack {
-            Text("Сортировка")
-            Spacer()
-            Picker("", selection: $viewModel.sortType) {
-                ForEach(SortType.allCases) { type in
-                    Text(type.rawValue).tag(type)
+            HStack {
+                Text("Сортировка")
+                Spacer()
+                Picker("", selection: $viewModel.sortType) {
+                    ForEach(SortType.allCases) { type in
+                        Text(type.rawValue).tag(type)
+                    }
                 }
+                .pickerStyle(.menu)
             }
-            .pickerStyle(.segmented)
-            .frame(width: 150)
-            .background(Color.accentColor.opacity(0.5))
-            .cornerRadius(8)
         }
-    }
     
     private var totalAmountRow: some View {
         ListRowView(
