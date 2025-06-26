@@ -3,13 +3,13 @@ import Foundation
 /// Модель банковского счета
 struct BankAccount: Identifiable, Codable {
     // MARK: - Properties
-    let id: Int
-    let userId: Int
-    let name: String
-    let balance: Decimal
-    let currency: Currency
-    let createdAt: Date
-    let updatedAt: Date
+    var id: Int
+    var userId: Int
+    var name: String
+    var balance: Decimal
+    var currency: Currency
+    var createdAt: Date
+    var updatedAt: Date
     
     enum CodingKeys: String, CodingKey {
         case id, userId, name, balance, currency, createdAt, updatedAt
