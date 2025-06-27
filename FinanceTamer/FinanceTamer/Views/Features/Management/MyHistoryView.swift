@@ -122,8 +122,7 @@ struct MyHistoryView: View {
                     HStack {
                         Image(systemName: "chevron.backward")
                         Text("Назад")
-                    }
-                    .tint(Color.navigation)
+                    }.foregroundStyle(Color.navigation)
                 }
             }
             
@@ -212,10 +211,10 @@ extension View {
     }
 }
 
-// MARK: - Color Extension (если нет в проекте)
+// MARK: - Color Extension
 
 extension Color {
-    static let navigation = Color("navigation")
+    static let navigation = Color("navigationColor")
 }
 
 // MARK: - Preview

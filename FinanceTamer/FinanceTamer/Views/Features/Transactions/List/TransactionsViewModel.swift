@@ -8,10 +8,15 @@ final class TransactionsViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var isLoading = false
     @Published var error: Error?
+    @Published private var currency = CurrencyService.shared.currentCurrency
     @Published var sortType: SortType = .dateDescending {
         didSet {
             sortTransactions()
         }
+    }
+    
+    var totalAmount: Decimal {
+        displayedTransactions.reduce(0) { $0 + $1.amount }
     }
     
     var selectedDirection: Direction = .outcome {
@@ -41,6 +46,8 @@ final class TransactionsViewModel: ObservableObject {
         self.transactionsService = transactionsService
         self.categoriesService = categoriesService
         self.selectedDirection = selectedDirection
+        CurrencyService.shared.$currentCurrency
+            .assign(to: &$currency)
     }
     
     func loadTransactions() async {

@@ -13,7 +13,7 @@ struct CustomPickerView: View {
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .foregroundColor(.accentColor)
-                .opacity(0.5)
+                .opacity(0.2)
                 .padding(.vertical, -7)
         )
         .overlay {

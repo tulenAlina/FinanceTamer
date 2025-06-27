@@ -1,12 +1,13 @@
 import Foundation
 
 extension NumberFormatter {
-    static let currency: NumberFormatter = {
+    static var currency: NumberFormatter {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencySymbol = "₽"
+        formatter.currencySymbol = CurrencyService.shared.currentCurrency.symbol
+        formatter.maximumFractionDigits = 2
         formatter.minimumFractionDigits = 0
-        formatter.maximumFractionDigits = 0
+        formatter.decimalSeparator = ","
         return formatter
-    }()
+    }
 }

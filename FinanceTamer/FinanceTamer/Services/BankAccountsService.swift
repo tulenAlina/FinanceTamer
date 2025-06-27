@@ -2,6 +2,8 @@ import Foundation
 
 /// Сервис для работы с банковскими счетами
 final class BankAccountsService {
+    static let shared = BankAccountsService()
+    
     private var mockAccounts: [BankAccount] = [
         BankAccount(
             id: 1,
@@ -13,6 +15,8 @@ final class BankAccountsService {
             updatedAt: Date()
         )
     ]
+    
+    private init() {} // Приватный инициализатор для синглтона
     
     /// Получает основной счет пользователя
     func getPrimaryAccount(for userId: Int) async throws -> BankAccount {

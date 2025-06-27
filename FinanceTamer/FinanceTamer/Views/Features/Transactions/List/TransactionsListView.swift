@@ -37,7 +37,7 @@ struct TransactionsListView: View {
                         
                         ListRowView(
                             categoryName: "Всего",
-                            transactionAmount: viewModel.totalAmountToday,
+                            transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: viewModel.totalAmount)) ?? "0 ₽",
                             needChevron: false
                         )
                     } header: {

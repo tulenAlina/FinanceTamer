@@ -45,6 +45,11 @@
 		87B751A62E06454D000C66F2 /* TransactionsListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B751A42E06454D000C66F2 /* TransactionsListView.swift */; };
 		87B751A72E06454D000C66F2 /* TransactionsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B751A52E06454D000C66F2 /* TransactionsViewModel.swift */; };
 		87B751AD2E06459D000C66F2 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 87B751AB2E06459D000C66F2 /* Assets.xcassets */; };
+		87B752552E0AD3F8000C66F2 /* ScoreViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B752542E0AD3F1000C66F2 /* ScoreViewModel.swift */; };
+		87B752572E0D5257000C66F2 /* CurrencyPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B752562E0D5254000C66F2 /* CurrencyPickerView.swift */; };
+		87B7525B2E0E0CCE000C66F2 /* CurrencyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7525A2E0E0CCC000C66F2 /* CurrencyService.swift */; };
+		87B7532B2E0ED731000C66F2 /* SpoilerText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7532A2E0ED730000C66F2 /* SpoilerText.swift */; };
+		87B7532D2E0ED831000C66F2 /* ShakeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7532C2E0ED82F000C66F2 /* ShakeDetector.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -98,6 +103,11 @@
 		87B751A42E06454D000C66F2 /* TransactionsListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsListView.swift; sourceTree = "<group>"; };
 		87B751A52E06454D000C66F2 /* TransactionsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsViewModel.swift; sourceTree = "<group>"; };
 		87B751AB2E06459D000C66F2 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		87B752542E0AD3F1000C66F2 /* ScoreViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScoreViewModel.swift; sourceTree = "<group>"; };
+		87B752562E0D5254000C66F2 /* CurrencyPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyPickerView.swift; sourceTree = "<group>"; };
+		87B7525A2E0E0CCC000C66F2 /* CurrencyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyService.swift; sourceTree = "<group>"; };
+		87B7532A2E0ED730000C66F2 /* SpoilerText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoilerText.swift; sourceTree = "<group>"; };
+		87B7532C2E0ED82F000C66F2 /* ShakeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeDetector.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -180,6 +190,7 @@
 		876617772DFB1906008001B4 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				87B7525A2E0E0CCC000C66F2 /* CurrencyService.swift */,
 				876617842DFB7F05008001B4 /* TransactionsFileCache.swift */,
 				876617862DFB8231008001B4 /* CategoriesService.swift */,
 				876617882DFB8DB7008001B4 /* BankAccountsService.swift */,
@@ -201,6 +212,7 @@
 		876617792DFB1928008001B4 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				87B7532C2E0ED82F000C66F2 /* ShakeDetector.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -283,6 +295,7 @@
 		87B751B52E066280000C66F2 /* Management */ = {
 			isa = PBXGroup;
 			children = (
+				87B752542E0AD3F1000C66F2 /* ScoreViewModel.swift */,
 				87B751822E06454D000C66F2 /* ArticlesView.swift */,
 				87B7519A2E06454D000C66F2 /* MyHistoryView.swift */,
 				87B7519E2E06454D000C66F2 /* ScoreView.swift */,
@@ -339,6 +352,8 @@
 		87B751BB2E0664E2000C66F2 /* CustomViews */ = {
 			isa = PBXGroup;
 			children = (
+				87B7532A2E0ED730000C66F2 /* SpoilerText.swift */,
+				87B752562E0D5254000C66F2 /* CurrencyPickerView.swift */,
 				87B751842E06454D000C66F2 /* CustomPickerView.swift */,
 				87B751852E06454D000C66F2 /* ListRowView.swift */,
 			);
@@ -407,11 +422,12 @@
 			};
 			buildConfigurationList = 876617602DFB0C2A008001B4 /* Build configuration list for PBXProject "FinanceTamer" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
+			developmentRegion = ru;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				ru,
 			);
 			mainGroup = 8766175C2DFB0C29008001B4;
 			productRefGroup = 876617662DFB0C2A008001B4 /* Products */;
@@ -451,6 +467,7 @@
 				87B751A32E06454D000C66F2 /* TabBarView.swift in Sources */,
 				876617832DFB7B1B008001B4 /* Transaction+JSON.swift in Sources */,
 				87B7519F2E06454D000C66F2 /* ScoreView.swift in Sources */,
+				87B752552E0AD3F8000C66F2 /* ScoreViewModel.swift in Sources */,
 				87B7504A2E05B1A4000C66F2 /* ParsingErrors.swift in Sources */,
 				87B750482E05B19B000C66F2 /* AppErrors.swift in Sources */,
 				8766176B2DFB0C2A008001B4 /* ContentView.swift in Sources */,
@@ -458,9 +475,11 @@
 				876617692DFB0C2A008001B4 /* FinanceTamerApp.swift in Sources */,
 				876617892DFB8DB7008001B4 /* BankAccountsService.swift in Sources */,
 				876617852DFB7F05008001B4 /* TransactionsFileCache.swift in Sources */,
+				87B752572E0D5257000C66F2 /* CurrencyPickerView.swift in Sources */,
 				87B7504E2E05D91A000C66F2 /* FileErrors.swift in Sources */,
 				87B7518C2E06454D000C66F2 /* ExpensesView.swift in Sources */,
 				87B7518D2E06454D000C66F2 /* ExpensesHistoryView.swift in Sources */,
+				87B7532B2E0ED731000C66F2 /* SpoilerText.swift in Sources */,
 				87B7518E2E06454D000C66F2 /* NewExpensesView.swift in Sources */,
 				8766178D2DFB971E008001B4 /* Transaction+CSV.swift in Sources */,
 				87B751A62E06454D000C66F2 /* TransactionsListView.swift in Sources */,
@@ -473,6 +492,7 @@
 				8766177F2DFB4798008001B4 /* BankAccount.swift in Sources */,
 				87B751862E06454D000C66F2 /* ListRowView.swift in Sources */,
 				87B751A12E06454D000C66F2 /* SettingsView.swift in Sources */,
+				87B7525B2E0E0CCE000C66F2 /* CurrencyService.swift in Sources */,
 				87B751872E06454D000C66F2 /* CustomPickerView.swift in Sources */,
 				87B751972E06454D000C66F2 /* NewIncomeView.swift in Sources */,
 				87B7519C2E06454D000C66F2 /* MyHistoryViewModel.swift in Sources */,
@@ -481,6 +501,7 @@
 				87B751992E06454D000C66F2 /* IncomeView.swift in Sources */,
 				8766178B2DFB917F008001B4 /* TransactionsService.swift in Sources */,
 				87B751812E06454D000C66F2 /* AnalysisView.swift in Sources */,
+				87B7532D2E0ED831000C66F2 /* ShakeDetector.swift in Sources */,
 				876617872DFB8231008001B4 /* CategoriesService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
