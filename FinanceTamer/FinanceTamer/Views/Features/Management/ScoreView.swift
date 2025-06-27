@@ -6,7 +6,8 @@ struct ScoreView: View {
     @State private var isEditing = false
     @State private var showCurrencyPicker = false
     @State private var balanceText: String = ""
-    @State private var isBalanceHidden = true // Начинаем со скрытого состояния
+    @State private var isBalanceHidden = true
+    @FocusState private var isBalanceFocused: Bool
     
     private var currencySymbol: String {
         switch viewModel.currency {
@@ -30,10 +31,26 @@ struct ScoreView: View {
                                 TextField("", text: $balanceText)
                                     .keyboardType(.decimalPad)
                                     .multilineTextAlignment(.trailing)
+                                    .focused($isBalanceFocused)
+                                    .toolbar {
+                                        ToolbarItemGroup(placement: .keyboard) {
+                                            Spacer()
+                                            Button("Готово") {
+                                                isBalanceFocused = false
+                                            }
+                                        }
+                                    }
                                     .onAppear {
                                         balanceText = viewModel.balanceString
                                             .replacingOccurrences(of: " ", with: "")
                                             .replacingOccurrences(of: currencySymbol, with: "")
+                                    }
+                                    .onChange(of: isEditing) { newValue in
+                                        if newValue {
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                isBalanceFocused = true
+                                            }
+                                        }
                                     }
                                     .onChange(of: balanceText) { newValue in
                                         balanceText = filterBalanceInput(newValue)
@@ -61,6 +78,11 @@ struct ScoreView: View {
                     .contentShape(Rectangle())
                     .animation(.easeInOut(duration: 0.3), value: isBalanceHidden)
                     .listRowBackground(isEditing ? Color(.systemBackground) : Color.accentColor)
+                    .onTapGesture {
+                        if !isEditing {
+                            isEditing = true
+                        }
+                    }
                     
                     // Строка валюты
                     HStack {
@@ -83,6 +105,16 @@ struct ScoreView: View {
             .refreshable {
                 await viewModel.refreshAccount()
             }
+            .onChange(of: isEditing) { editing in
+                if !editing {
+                    isBalanceFocused = false
+                }
+            }
+            .gesture(
+                DragGesture().onChanged { _ in
+                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                }
+            )
             .navigationTitle("Мой счет")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -126,18 +158,16 @@ struct ScoreView: View {
         let filtered = input.unicodeScalars.filter { allowedCharacters.contains($0) }
         var string = String(String.UnicodeScalarView(filtered))
         
-        // Ограничиваем количество цифр после запятой
         if let commaIndex = string.firstIndex(of: ",") {
             let beforeComma = string[..<commaIndex]
             let afterComma = string[string.index(after: commaIndex)...]
-                .prefix(2)  // Ограничиваем до 2 цифр после запятой
+                .prefix(2)
             string = String(beforeComma) + "," + String(afterComma)
         }
         
         return string
     }
 }
-
 #Preview {
     ScoreView()
 }
