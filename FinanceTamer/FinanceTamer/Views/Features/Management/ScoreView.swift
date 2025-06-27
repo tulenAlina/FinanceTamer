@@ -2,39 +2,67 @@ import SwiftUI
 
 struct ScoreView: View {
     @StateObject private var viewModel = ScoreViewModel()
+    @StateObject private var shakeDetector = ShakeDetector()
     @State private var isEditing = false
     @State private var showCurrencyPicker = false
     @State private var balanceText: String = ""
+    @State private var isBalanceHidden = true // Начинаем со скрытого состояния
+    
+    private var currencySymbol: String {
+        switch viewModel.currency {
+        case .rub: return "₽"
+        case .usd: return "$"
+        case .eur: return "€"
+        }
+    }
     
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    // Balance row
+                    // Строка баланса
                     HStack {
                         Text("💰 Баланс")
                         Spacer()
+                        
                         if isEditing {
-                            TextField("", text: $balanceText)
-                                .keyboardType(.decimalPad)
-                                .multilineTextAlignment(.trailing)
-                                .onAppear {
-                                    balanceText = viewModel.balanceString
-                                }
-                                .foregroundColor(isEditing ? Color(white: 0.5) : .primary)
+                            HStack(spacing: 2) {
+                                TextField("", text: $balanceText)
+                                    .keyboardType(.decimalPad)
+                                    .multilineTextAlignment(.trailing)
+                                    .onAppear {
+                                        balanceText = viewModel.balanceString
+                                            .replacingOccurrences(of: " ", with: "")
+                                            .replacingOccurrences(of: currencySymbol, with: "")
+                                    }
+                                    .onChange(of: balanceText) { newValue in
+                                        balanceText = filterBalanceInput(newValue)
+                                    }
+                                    .foregroundColor(isEditing ? Color(white: 0.5) : .primary)
+                                    .contextMenu {
+                                        Button {
+                                            if let clipboardString = UIPasteboard.general.string {
+                                                balanceText = filterBalanceInput(clipboardString)
+                                            }
+                                        } label: {
+                                            Label("Вставить", systemImage: "doc.on.clipboard")
+                                        }
+                                    }
+                                Text(currencySymbol)
+                            }
                         } else {
-                            Text(viewModel.balanceString)
+                            SpoilerText(
+                                balance: viewModel.balanceString,
+                                currencySymbol: currencySymbol,
+                                isHidden: $isBalanceHidden
+                            )
                         }
                     }
                     .contentShape(Rectangle())
-                    .onTapGesture {
-                        if isEditing {
-                            // Keyboard will show automatically from TextField
-                        }
-                    }
+                    .animation(.easeInOut(duration: 0.3), value: isBalanceHidden)
                     .listRowBackground(isEditing ? Color(.systemBackground) : Color.accentColor)
                     
-                    // Currency row
+                    // Строка валюты
                     HStack {
                         Text("Валюта")
                         Spacer()
@@ -48,11 +76,13 @@ struct ScoreView: View {
                         }
                     }
                     .listRowBackground(isEditing ? Color(.systemBackground) : Color.accentColor.opacity(0.2))
-                    
                 }
             }
             .listStyle(.insetGrouped)
             .listRowSpacing(16)
+            .refreshable {
+                await viewModel.refreshAccount()
+            }
             .navigationTitle("Мой счет")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
@@ -73,22 +103,38 @@ struct ScoreView: View {
                             .onTapGesture {
                                 showCurrencyPicker = false
                             }
-                            .transition(.opacity)
                         
                         CurrencyPickerView(selectedCurrency: $viewModel.currency)
-                            .transition(.move(edge: .bottom))
+                            .environmentObject(CurrencyService.shared)
                     }
                 }
-                .animation(.easeInOut, value: showCurrencyPicker))
+            )
             .onAppear {
                 viewModel.loadAccount()
             }
-            .gesture(
-                DragGesture().onChanged { _ in
-                    UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+            .onReceive(shakeDetector.$shaken) { _ in
+                guard !isEditing else { return }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    isBalanceHidden.toggle()
                 }
-            )
+            }
         }
+    }
+    
+    private func filterBalanceInput(_ input: String) -> String {
+        let allowedCharacters = CharacterSet(charactersIn: "0123456789,")
+        let filtered = input.unicodeScalars.filter { allowedCharacters.contains($0) }
+        var string = String(String.UnicodeScalarView(filtered))
+        
+        // Ограничиваем количество цифр после запятой
+        if let commaIndex = string.firstIndex(of: ",") {
+            let beforeComma = string[..<commaIndex]
+            let afterComma = string[string.index(after: commaIndex)...]
+                .prefix(2)  // Ограничиваем до 2 цифр после запятой
+            string = String(beforeComma) + "," + String(afterComma)
+        }
+        
+        return string
     }
 }
 

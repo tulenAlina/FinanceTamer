@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CurrencyPickerView: View {
     @Binding var selectedCurrency: Currency
+    @EnvironmentObject var currencyService: CurrencyService
     @Environment(\.dismiss) var dismiss
     
     var body: some View {
@@ -38,27 +39,28 @@ struct CurrencyPickerView: View {
     }
     
     private func currencyRow(_ name: String, currency: Currency) -> some View {
-        Button(action: {
-            selectedCurrency = currency
-            dismiss()
-        }) {
-            HStack {
-                Spacer()
-                Text(name)
-                    .font(.system(size: 17))
-                    .foregroundColor(Color.navigation)
-                Spacer()
-                
-                if currency == selectedCurrency {
-                    Image(systemName: "checkmark")
+            Button(action: {
+                selectedCurrency = currency
+                currencyService.currentCurrency = currency
+                dismiss()
+            }) {
+                HStack {
+                    Spacer()
+                    Text(name)
+                        .font(.system(size: 17))
                         .foregroundColor(Color.navigation)
-                        .padding(.leading, 8)
+                    Spacer()
+                    
+                    if currency == selectedCurrency {
+                        Image(systemName: "checkmark")
+                            .foregroundColor(Color.navigation)
+                            .padding(.leading, 8)
+                    }
                 }
+                .padding(.vertical, 12)
+                .padding(.horizontal, 16)
             }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 16)
         }
-    }
 }
 #Preview {
     ScoreView()
