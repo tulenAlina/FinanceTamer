@@ -8,12 +8,9 @@ struct SpoilerText: View {
     var body: some View {
         HStack(spacing: 2) {
             if isHidden {
-                ZStack {
-                    Text(balance)
-                        .hidden()
-                    SpoilerEffectView()
-                }
-                .frame(height: 24)
+                SpoilerEffectView()
+                    .frame(height: 24)
+                    .frame(maxWidth: .infinity, alignment: .trailing)
             } else {
                 Text(balance)
             }
@@ -31,12 +28,13 @@ struct SpoilerEffectView: UIViewRepresentable {
     
     func updateUIView(_ uiView: UIView, context: Context) {
         guard let spoilerView = uiView as? SpoilerUIView else { return }
+        spoilerView.isAnimating = true
         spoilerView.startAnimation()
     }
 }
 
 class SpoilerUIView: UIView {
-    var emitterLayer: CAEmitterLayer!
+    var isAnimating = false
     
     override class var layerClass: AnyClass {
         return CAEmitterLayer.self
@@ -52,15 +50,25 @@ class SpoilerUIView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        if window != nil && isAnimating {
+            startAnimation()
+        } else {
+            stopAnimation()
+        }
+    }
+    
     override func layoutSubviews() {
         super.layoutSubviews()
-        emitterLayer?.emitterSize = bounds.size
-        emitterLayer?.emitterPosition = CGPoint(x: bounds.midX, y: bounds.midY)
+        if let emitterLayer = self.layer as? CAEmitterLayer {
+            emitterLayer.emitterSize = bounds.size
+            emitterLayer.emitterPosition = CGPoint(x: bounds.midX, y: bounds.midY)
+        }
     }
     
     func startAnimation() {
         guard let emitterLayer = self.layer as? CAEmitterLayer else { return }
-        self.emitterLayer = emitterLayer
         
         emitterLayer.emitterShape = .rectangle
         emitterLayer.emitterMode = .surface
@@ -83,5 +91,12 @@ class SpoilerUIView: UIView {
         cell.color = UIColor.label.cgColor
         
         emitterLayer.emitterCells = [cell]
+        isAnimating = true
+    }
+    
+    func stopAnimation() {
+        guard let emitterLayer = self.layer as? CAEmitterLayer else { return }
+        emitterLayer.emitterCells = nil
+        isAnimating = false
     }
 }
