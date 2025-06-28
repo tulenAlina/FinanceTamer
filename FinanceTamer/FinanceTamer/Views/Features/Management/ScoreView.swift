@@ -79,8 +79,8 @@ struct ScoreView: View {
                     .animation(.easeInOut(duration: 0.3), value: isBalanceHidden)
                     .listRowBackground(isEditing ? Color(.systemBackground) : Color.accentColor)
                     .onTapGesture {
-                        if !isEditing {
-                            isEditing = true
+                        if isEditing {
+                            isBalanceFocused = true
                         }
                     }
                     
@@ -102,6 +102,7 @@ struct ScoreView: View {
             }
             .listStyle(.insetGrouped)
             .listRowSpacing(16)
+            .scrollDismissesKeyboard(.immediately)
             .refreshable {
                 await viewModel.refreshAccount()
             }
