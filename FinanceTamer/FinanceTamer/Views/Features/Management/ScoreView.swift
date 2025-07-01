@@ -124,6 +124,7 @@ struct ScoreView: View {
                             viewModel.saveChanges(balanceString: balanceText)
                         }
                         isEditing.toggle()
+                        showCurrencyPicker = false
                     }
                     .tint(Color.navigation)
                 }
@@ -160,10 +161,14 @@ struct ScoreView: View {
         var string = String(String.UnicodeScalarView(filtered))
         
         if let commaIndex = string.firstIndex(of: ",") {
-            let beforeComma = string[..<commaIndex]
-            let afterComma = string[string.index(after: commaIndex)...]
-                .prefix(2)
-            string = String(beforeComma) + "," + String(afterComma)
+            // Обрабатываем часть до запятой с ограничением 15 символов
+            let beforeComma = String(string[..<commaIndex].prefix(15))
+            // Обрабатываем часть после запятой (максимум 2 символа)
+            let afterComma = String(string[string.index(after: commaIndex)...].prefix(2))
+            string = beforeComma + "," + afterComma
+        } else {
+            // Если запятой нет, просто ограничиваем общее количество цифр
+            string = String(string.prefix(15))
         }
         
         return string
