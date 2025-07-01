@@ -16,24 +16,24 @@ class ScoreViewModel: ObservableObject {
     }
     
     func loadAccount() {
-            Task {
-                do {
-                    let account = try await accountsService.getPrimaryAccount(for: 1)
-                    balance = account.balance
-                    originalBalance = account.balance
-                    
-                    // Загружаем валюту из аккаунта только при первой загрузке
-                    if isInitialLoad {
-                        currency = account.currency
-                        isInitialLoad = false
-                    }
-                    
-                    updateBalanceString()
-                } catch {
-                    print("Error loading account: \(error)")
+        Task {
+            do {
+                let account = try await accountsService.getPrimaryAccount(for: 1)
+                balance = account.balance
+                originalBalance = account.balance
+                
+                // Загружаем валюту из аккаунта только при первой загрузке
+                if isInitialLoad {
+                    currency = account.currency
+                    isInitialLoad = false
                 }
+                
+                updateBalanceString()
+            } catch {
+                print("Error loading account: \(error)")
             }
         }
+    }
     
     func saveChanges(balanceString: String) {
         let cleanedString = balanceString.replacingOccurrences(of: ",", with: ".")
