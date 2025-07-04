@@ -25,7 +25,7 @@ struct TabBarView: View {
                 .toolbarBackground(.visible, for: .tabBar)
                 .toolbarBackground(Color.white, for: .tabBar)
             
-            ArticlesView()
+            CategoriesView()
                 .tabItem {
                     tabItem(imageName: "articlesTab", title: "Статьи")
                 }
