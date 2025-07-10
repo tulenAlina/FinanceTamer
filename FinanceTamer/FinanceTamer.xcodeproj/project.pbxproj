@@ -10,6 +10,11 @@
 		872676CA2E1440D400186972 /* CategoriesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872676C92E1440D000186972 /* CategoriesViewModel.swift */; };
 		872676CC2E1440EE00186972 /* CategoryRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872676CB2E1440E500186972 /* CategoryRow.swift */; };
 		872676CE2E14607800186972 /* FuzzySearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872676CD2E14607700186972 /* FuzzySearch.swift */; };
+		872677012E1D6B5500186972 /* AnalysisViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872677002E1D6B5400186972 /* AnalysisViewController.swift */; };
+		872677032E1D6B6F00186972 /* DatePickerCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872677022E1D6B6C00186972 /* DatePickerCell.swift */; };
+		872677052E1D6B9100186972 /* SortingCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872677042E1D6B9000186972 /* SortingCell.swift */; };
+		872677072E1D6BA900186972 /* TotalAmountCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872677062E1D6BA700186972 /* TotalAmountCell.swift */; };
+		872677092E1D6BBE00186972 /* AnalysisCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872677082E1D6BBD00186972 /* AnalysisCell.swift */; };
 		876617692DFB0C2A008001B4 /* FinanceTamerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 876617682DFB0C2A008001B4 /* FinanceTamerApp.swift */; };
 		8766176B2DFB0C2A008001B4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766176A2DFB0C2A008001B4 /* ContentView.swift */; };
 		876617702DFB0C2C008001B4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8766176F2DFB0C2C008001B4 /* Preview Assets.xcassets */; };
@@ -69,6 +74,11 @@
 		872676C92E1440D000186972 /* CategoriesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesViewModel.swift; sourceTree = "<group>"; };
 		872676CB2E1440E500186972 /* CategoryRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryRow.swift; sourceTree = "<group>"; };
 		872676CD2E14607700186972 /* FuzzySearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FuzzySearch.swift; sourceTree = "<group>"; };
+		872677002E1D6B5400186972 /* AnalysisViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisViewController.swift; sourceTree = "<group>"; };
+		872677022E1D6B6C00186972 /* DatePickerCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DatePickerCell.swift; sourceTree = "<group>"; };
+		872677042E1D6B9000186972 /* SortingCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SortingCell.swift; sourceTree = "<group>"; };
+		872677062E1D6BA700186972 /* TotalAmountCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TotalAmountCell.swift; sourceTree = "<group>"; };
+		872677082E1D6BBD00186972 /* AnalysisCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalysisCell.swift; sourceTree = "<group>"; };
 		876617652DFB0C2A008001B4 /* FinanceTamer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinanceTamer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		876617682DFB0C2A008001B4 /* FinanceTamerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceTamerApp.swift; sourceTree = "<group>"; };
 		8766176A2DFB0C2A008001B4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -285,6 +295,11 @@
 		87B751B32E066265000C66F2 /* Analysis */ = {
 			isa = PBXGroup;
 			children = (
+				872677082E1D6BBD00186972 /* AnalysisCell.swift */,
+				872677062E1D6BA700186972 /* TotalAmountCell.swift */,
+				872677042E1D6B9000186972 /* SortingCell.swift */,
+				872677022E1D6B6C00186972 /* DatePickerCell.swift */,
+				872677002E1D6B5400186972 /* AnalysisViewController.swift */,
 				87B751802E06454D000C66F2 /* AnalysisView.swift */,
 			);
 			path = Analysis;
@@ -481,12 +496,14 @@
 				87B750482E05B19B000C66F2 /* AppErrors.swift in Sources */,
 				872676CE2E14607800186972 /* FuzzySearch.swift in Sources */,
 				8766176B2DFB0C2A008001B4 /* ContentView.swift in Sources */,
+				872677072E1D6BA900186972 /* TotalAmountCell.swift in Sources */,
 				87B750502E060BF5000C66F2 /* Currency.swift in Sources */,
 				876617692DFB0C2A008001B4 /* FinanceTamerApp.swift in Sources */,
 				876617892DFB8DB7008001B4 /* BankAccountsService.swift in Sources */,
 				876617852DFB7F05008001B4 /* TransactionsFileCache.swift in Sources */,
 				87B752572E0D5257000C66F2 /* CurrencyPickerView.swift in Sources */,
 				87B7504E2E05D91A000C66F2 /* FileErrors.swift in Sources */,
+				872677012E1D6B5500186972 /* AnalysisViewController.swift in Sources */,
 				87B7518C2E06454D000C66F2 /* ExpensesView.swift in Sources */,
 				87B7518D2E06454D000C66F2 /* ExpensesHistoryView.swift in Sources */,
 				87B7532B2E0ED731000C66F2 /* SpoilerText.swift in Sources */,
@@ -498,6 +515,7 @@
 				8766177B2DFB199D008001B4 /* Direction.swift in Sources */,
 				8766177D2DFB19C2008001B4 /* Category.swift in Sources */,
 				87B750692E0621F7000C66F2 /* Transaction+Category.swift in Sources */,
+				872677092E1D6BBE00186972 /* AnalysisCell.swift in Sources */,
 				87B751832E06454D000C66F2 /* CategoriesView.swift in Sources */,
 				8766177F2DFB4798008001B4 /* BankAccount.swift in Sources */,
 				87B751862E06454D000C66F2 /* ListRowView.swift in Sources */,
@@ -505,8 +523,10 @@
 				872676CC2E1440EE00186972 /* CategoryRow.swift in Sources */,
 				87B7525B2E0E0CCE000C66F2 /* CurrencyService.swift in Sources */,
 				87B751872E06454D000C66F2 /* CustomPickerView.swift in Sources */,
+				872677032E1D6B6F00186972 /* DatePickerCell.swift in Sources */,
 				87B751972E06454D000C66F2 /* NewIncomeView.swift in Sources */,
 				87B7519C2E06454D000C66F2 /* MyHistoryViewModel.swift in Sources */,
+				872677052E1D6B9100186972 /* SortingCell.swift in Sources */,
 				87B7519D2E06454D000C66F2 /* MyHistoryView.swift in Sources */,
 				87B751982E06454D000C66F2 /* IncomeHistoryView.swift in Sources */,
 				872676CA2E1440D400186972 /* CategoriesViewModel.swift in Sources */,

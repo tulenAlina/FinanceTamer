@@ -77,17 +77,17 @@ struct MyHistoryView: View {
     }
     
     private var sortingPicker: some View {
-            HStack {
-                Text("Сортировка")
-                Spacer()
-                Picker("", selection: $viewModel.sortType) {
-                    ForEach(SortType.allCases) { type in
-                        Text(type.rawValue).tag(type)
-                    }
+        HStack {
+            Text("Сортировка")
+            Spacer()
+            Picker("", selection: $viewModel.sortType) {
+                ForEach(SortType.allCases) { type in
+                    Text(type.rawValue).tag(type)
                 }
-                .pickerStyle(.menu)
             }
+            .pickerStyle(.menu)
         }
+    }
     
     private var totalAmountRow: some View {
         ListRowView(
@@ -128,7 +128,7 @@ struct MyHistoryView: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink {
-                    AnalysisView()
+                    AnalysisView(selectedDirection: viewModel.selectedDirection)
                 } label: {
                     Image("document")
                         .resizable()
@@ -177,21 +177,21 @@ struct TransactionRow: View {
     let viewModel: MyHistoryViewModel
     
     var body: some View {
-            let category = viewModel.category(for: transaction)
-            let comment = transaction.comment ?? ""
-            
-            VStack(spacing: 0) {
-                ListRowView(
-                    emoji: category.map { String($0.emoji) } ?? "❓",
-                    categoryName: category?.name ?? "Не известно",
-                    transactionComment: comment.isEmpty ? nil : comment,
-                    transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: transaction.amount)) ?? "",
-                    transactionDate: dateFormatted(date: transaction.transactionDate),
-                    needChevron: true
-                )
-            }
-            .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
+        let category = viewModel.category(for: transaction)
+        let comment = transaction.comment ?? ""
+        
+        VStack(spacing: 0) {
+            ListRowView(
+                emoji: category.map { String($0.emoji) } ?? "❓",
+                categoryName: category?.name ?? "Не известно",
+                transactionComment: comment.isEmpty ? nil : comment,
+                transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: transaction.amount)) ?? "",
+                transactionDate: dateFormatted(date: transaction.transactionDate),
+                needChevron: true
+            )
         }
+        .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
+    }
     
     private func dateFormatted(date: Date) -> String {
         let formatter = DateFormatter()
