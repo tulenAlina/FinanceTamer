@@ -30,7 +30,9 @@ struct MyHistoryView: View {
     var filteredTransactions: [Transaction] {
         let dateRange = startDate...endDate
         return transactionsViewModel.allTransactions.filter { transaction in
-            dateRange.contains(transaction.transactionDate)
+            guard let category = transactionsViewModel.category(for: transaction) else { return false }
+            return dateRange.contains(transaction.transactionDate) && 
+                   category.direction == transactionsViewModel.selectedDirection
         }
     }
     
