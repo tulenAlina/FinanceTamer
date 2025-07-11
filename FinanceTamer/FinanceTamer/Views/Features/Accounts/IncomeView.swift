@@ -3,16 +3,17 @@ import SwiftUI
 struct IncomeView: View {
     private let transactionsService = TransactionsService()
     private let categoriesService = CategoriesService()
+    @EnvironmentObject var currencyService: CurrencyService
+    @EnvironmentObject var transactionsViewModel: TransactionsViewModel
     
     var body: some View {
         NavigationStack {
             ZStack {
-                TransactionsListView(
-                    transactionsService: transactionsService,
-                    categoriesService: categoriesService,
-                    direction: .income,
-                    title: "Доходы сегодня"
-                )
+                TransactionsListView(title: "Доходы сегодня")
+                    .environmentObject(transactionsViewModel)
+                    .onAppear {
+                        transactionsViewModel.switchDirection(to: .income)
+                    }
                 
                 VStack {
                     Spacer()
@@ -20,6 +21,13 @@ struct IncomeView: View {
                         Spacer()
                         NavigationLink {
                             NewIncomeView()
+                                .environmentObject(currencyService)
+                                .environmentObject(transactionsViewModel)
+                                .onDisappear {
+                                    Task {
+                                        await transactionsViewModel.loadTransactions()
+                                    }
+                                }
                         } label: {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 28)

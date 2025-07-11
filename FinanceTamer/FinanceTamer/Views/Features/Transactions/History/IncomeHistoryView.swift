@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct IncomeHistoryView: View {
+    @EnvironmentObject var transactionsViewModel: TransactionsViewModel
     @StateObject private var viewModel: MyHistoryViewModel
     
     init() {
@@ -17,6 +18,10 @@ struct IncomeHistoryView: View {
     
     var body: some View {
         MyHistoryView(viewModel: viewModel)
+            .environmentObject(transactionsViewModel)
+            .onAppear {
+                transactionsViewModel.switchDirection(to: .income)
+            }
     }
 }
 

@@ -7,7 +7,7 @@ enum TypeDate {
 
 struct MyHistoryView: View {
     @Environment(\.dismiss) private var dismiss
-    @ObservedObject private var viewModel: MyHistoryViewModel
+    @EnvironmentObject var transactionsViewModel: TransactionsViewModel
     
     @State private var startDate: Date = {
         let calendar = Calendar.current
@@ -25,8 +25,30 @@ struct MyHistoryView: View {
         return calendar.date(from: components) ?? Date()
     }()
     
-    init(viewModel: MyHistoryViewModel) {
-        self.viewModel = viewModel
+    @State private var sortType: SortType = .dateAscending
+    
+    var filteredTransactions: [Transaction] {
+        let dateRange = startDate...endDate
+        return transactionsViewModel.allTransactions.filter { transaction in
+            dateRange.contains(transaction.transactionDate)
+        }
+    }
+    
+    var sortedTransactions: [Transaction] {
+        switch sortType {
+        case .dateAscending:
+            return filteredTransactions.sorted { $0.transactionDate < $1.transactionDate }
+        case .dateDescending:
+            return filteredTransactions.sorted { $0.transactionDate > $1.transactionDate }
+        case .amountAscending:
+            return filteredTransactions.sorted { abs($0.amount) < abs($1.amount) }
+        case .amountDescending:
+            return filteredTransactions.sorted { abs($0.amount) > abs($1.amount) }
+        }
+    }
+    
+    var totalAmount: Decimal {
+        sortedTransactions.reduce(0) { $0 + $1.amount }
     }
     
     var body: some View {
@@ -37,7 +59,7 @@ struct MyHistoryView: View {
         .applyListStyles()
         .toolbar { toolbarItems }
         .task {
-            await viewModel.loadData(from: startDate, to: endDate)
+            await transactionsViewModel.loadTransactions()
         }
     }
     
@@ -56,8 +78,26 @@ struct MyHistoryView: View {
     
     private var transactionsSection: some View {
         Section {
-            ForEach(Array(viewModel.sortedTransactions.enumerated()), id: \.element.id) { index, transaction in
-                TransactionRow(transaction: transaction, viewModel: viewModel)
+            ForEach(Array(sortedTransactions.enumerated()), id: \.element.id) { index, transaction in
+                NavigationLink {
+                    TransactionEditView(
+                        mode: .edit(transaction),
+                        transactionsService: TransactionsService(),
+                        categoriesService: CategoriesService(),
+                        bankAccountsService: BankAccountsService.shared,
+                        transactionsViewModel: transactionsViewModel
+                    )
+                    .environmentObject(CurrencyService.shared)
+                    .environmentObject(transactionsViewModel)
+                    .onDisappear {
+                        Task {
+                            await transactionsViewModel.loadTransactions()
+                        }
+                    }
+                } label: {
+                    TransactionRow(transaction: transaction)
+                        .environmentObject(transactionsViewModel)
+                }
             }
         } header: {
             operationsHeader
@@ -72,7 +112,6 @@ struct MyHistoryView: View {
         }
         .onChange(of: date.wrappedValue) { _, newValue in
             changeDate(newValue: newValue, typeDate: type)
-            Task { await viewModel.loadData(from: startDate, to: endDate) }
         }
     }
     
@@ -80,7 +119,7 @@ struct MyHistoryView: View {
         HStack {
             Text("Сортировка")
             Spacer()
-            Picker("", selection: $viewModel.sortType) {
+            Picker("", selection: $sortType) {
                 ForEach(SortType.allCases) { type in
                     Text(type.rawValue).tag(type)
                 }
@@ -92,7 +131,7 @@ struct MyHistoryView: View {
     private var totalAmountRow: some View {
         ListRowView(
             categoryName: "Сумма",
-            transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: viewModel.totalAmount)) ?? "0 $",
+            transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: totalAmount)) ?? "0 $",
             needChevron: false
         )
     }
@@ -128,7 +167,7 @@ struct MyHistoryView: View {
             
             ToolbarItem(placement: .navigationBarTrailing) {
                 NavigationLink {
-                    AnalysisView(selectedDirection: viewModel.selectedDirection)
+                    AnalysisView(selectedDirection: transactionsViewModel.selectedDirection)
                 } label: {
                     Image("document")
                         .resizable()
@@ -174,10 +213,10 @@ struct MyHistoryView: View {
 
 struct TransactionRow: View {
     let transaction: Transaction
-    let viewModel: MyHistoryViewModel
+    @EnvironmentObject var transactionsViewModel: TransactionsViewModel
     
     var body: some View {
-        let category = viewModel.category(for: transaction)
+        let category = getCategory(for: transaction)
         let comment = transaction.comment ?? ""
         
         VStack(spacing: 0) {
@@ -187,7 +226,7 @@ struct TransactionRow: View {
                 transactionComment: comment.isEmpty ? nil : comment,
                 transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: transaction.amount)) ?? "",
                 transactionDate: dateFormatted(date: transaction.transactionDate),
-                needChevron: true
+                needChevron: false
             )
         }
         .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
@@ -197,6 +236,10 @@ struct TransactionRow: View {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm"
         return formatter.string(from: date)
+    }
+    
+    private func getCategory(for transaction: Transaction) -> Category? {
+        return transactionsViewModel.category(for: transaction)
     }
 }
 
@@ -220,9 +263,10 @@ extension Color {
 // MARK: - Preview
 
 #Preview {
-    MyHistoryView(viewModel: MyHistoryViewModel(
-        transactionsService: TransactionsService(),
-        categoriesService: CategoriesService(),
-        selectedDirection: .outcome
-    ))
+    MyHistoryView()
+        .environmentObject(TransactionsViewModel(
+            transactionsService: TransactionsService(),
+            categoriesService: CategoriesService(),
+            selectedDirection: .outcome
+        ))
 }
