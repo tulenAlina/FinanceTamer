@@ -40,14 +40,12 @@ struct AnalysisViewControllerWrapper: UIViewControllerRepresentable {
         )
         let analysisVC = AnalysisViewController(viewModel: viewModel)
         
-        // Передаем TransactionsViewModel в AnalysisViewController
         analysisVC.transactionsViewModel = transactionsViewModel
         
         return analysisVC
     }
 
     func updateUIViewController(_ uiViewController: AnalysisViewController, context: Context) {
-        // Обновляем TransactionsViewModel при изменении
         uiViewController.transactionsViewModel = transactionsViewModel
     }
 }

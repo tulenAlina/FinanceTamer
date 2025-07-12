@@ -192,21 +192,17 @@ class TransactionEditViewModel: ObservableObject {
     func delete() async {
         guard case let .edit(transaction) = mode else { return }
         
-        // 1. Сначала удаляем локально
         await transactionsViewModel?.deleteTransaction(withId: transaction.id)
         
-        // 2. Затем пытаемся удалить на сервере
         do {
             try await transactionsService.deleteTransaction(withId: transaction.id)
             
-            // 3. Фоновая синхронизация для актуальности данных
             Task {
                 await transactionsViewModel?.loadTransactions()
             }
         } catch {
             print("Error deleting transaction: \(error)")
             
-            // 4. Если ошибка - восстанавливаем транзакцию
             await transactionsViewModel?.createTransaction(
                 accountId: transaction.accountId,
                 amount: transaction.amount,
@@ -215,9 +211,7 @@ class TransactionEditViewModel: ObservableObject {
                 comment: transaction.comment
             )
             
-            // Показываем ошибку пользователю
             DispatchQueue.main.async {
-                // Здесь можно установить флаг ошибки для отображения пользователю
                 print("Не удалось удалить транзакцию: \(error.localizedDescription)")
             }
         }

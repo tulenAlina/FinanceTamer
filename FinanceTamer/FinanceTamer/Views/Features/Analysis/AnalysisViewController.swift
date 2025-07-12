@@ -7,7 +7,6 @@ final class AnalysisViewController: UIViewController {
     var viewModel: MyHistoryViewModel
     var transactionsViewModel: TransactionsViewModel?
     
-    // Кэш для статистики категорий и транзакций
     private var cachedCategoryStats: [(category: Category, amount: Decimal, percentage: Double)] = []
     private var cachedTransactionStats: [(transaction: Transaction, percentage: Double)] = []
     private var lastUpdateTime: Date = Date()
@@ -187,7 +186,6 @@ final class AnalysisViewController: UIViewController {
     private func getFilteredTransactions() -> [Transaction] {
         guard let transactionsVM = transactionsViewModel else { return [] }
         
-        // Фильтруем транзакции по направлению и датам
         let filteredTransactions = transactionsVM.allTransactions.filter { transaction in
             let category = transactionsVM.category(for: transaction)
             let isCorrectDirection = category?.direction == viewModel.selectedDirection

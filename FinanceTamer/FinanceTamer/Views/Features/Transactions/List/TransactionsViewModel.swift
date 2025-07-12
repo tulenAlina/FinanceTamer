@@ -88,7 +88,7 @@ final class TransactionsViewModel: ObservableObject {
         comment: String? = nil
     ) async {
         let newTransaction = Transaction(
-            id: 0, // Временный ID
+            id: 0, 
             accountId: accountId,
             categoryId: categoryId,
             amount: amount,
@@ -98,12 +98,10 @@ final class TransactionsViewModel: ObservableObject {
             updatedAt: Date()
         )
         
-        // Сначала добавляем локально
         allTransactions.append(newTransaction)
         filterTransactions()
         
         do {
-            // Затем синхронизируем с сервером
             try await transactionsService.createTransaction(
                 accountId: accountId,
                 amount: amount,
@@ -111,10 +109,8 @@ final class TransactionsViewModel: ObservableObject {
                 categoryId: categoryId,
                 comment: comment
             )
-            // Обновляем данные с сервера для актуальности
             await loadTransactions()
         } catch {
-            // Если ошибка - откатываем локальные изменения
             allTransactions.removeAll { $0.id == newTransaction.id }
             filterTransactions()
             self.error = error
@@ -122,18 +118,14 @@ final class TransactionsViewModel: ObservableObject {
     }
     
     func deleteTransaction(withId id: Int) async {
-        // Сначала удаляем локально
         let transactionToDelete = allTransactions.first { $0.id == id }
         allTransactions.removeAll { $0.id == id }
         filterTransactions()
         
         do {
-            // Затем синхронизируем с сервером
             try await transactionsService.deleteTransaction(withId: id)
-            // Обновляем данные с сервера для актуальности
             await loadTransactions()
         } catch {
-            // Если ошибка - восстанавливаем транзакцию
             if let transaction = transactionToDelete {
                 allTransactions.append(transaction)
                 filterTransactions()

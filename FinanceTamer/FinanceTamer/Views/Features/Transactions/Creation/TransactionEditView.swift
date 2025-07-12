@@ -213,7 +213,6 @@ struct TransactionEditView: View {
                     get: { viewModel.date },
                     set: { newDate in
                         viewModel.date = newDate
-                        // При изменении даты проверяем время
                         if Calendar.current.isDate(newDate, inSameDayAs: Date()) && viewModel.time > Date() {
                             viewModel.time = Date()
                         }
@@ -236,9 +235,8 @@ struct TransactionEditView: View {
                 selection: Binding(
                     get: { viewModel.time },
                     set: { newTime in
-                        // Проверяем, если дата сегодня и новое время больше текущего
                         if Calendar.current.isDate(viewModel.date, inSameDayAs: Date()) && newTime > Date() {
-                            viewModel.time = Date() // Устанавливаем текущее время
+                            viewModel.time = Date()
                         } else {
                             viewModel.time = newTime
                         }
