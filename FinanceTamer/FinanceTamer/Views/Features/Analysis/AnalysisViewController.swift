@@ -7,6 +7,11 @@ final class AnalysisViewController: UIViewController {
     var viewModel: MyHistoryViewModel
     var transactionsViewModel: TransactionsViewModel?
     
+    // Кэш для статистики категорий и транзакций
+    private var cachedCategoryStats: [(category: Category, amount: Decimal, percentage: Double)] = []
+    private var cachedTransactionStats: [(transaction: Transaction, percentage: Double)] = []
+    private var lastUpdateTime: Date = Date()
+    
     private var startDate: Date = {
         let calendar = Calendar.current
         let today = Date()
@@ -96,9 +101,16 @@ final class AnalysisViewController: UIViewController {
                 await viewModel.loadData(from: startDate, to: endDate)
             }
             DispatchQueue.main.async {
+                self.updateCache()
                 self.tableView.reloadData()
             }
         }
+    }
+    
+    private func updateCache() {
+        cachedCategoryStats = getCategoryStats()
+        cachedTransactionStats = getTransactionStats()
+        lastUpdateTime = Date()
     }
     
     @objc private func backButtonTapped() {
@@ -127,6 +139,11 @@ final class AnalysisViewController: UIViewController {
         }
         
         loadData()
+    }
+    
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        updateCache()
     }
     
     private func showDatePicker(for type: TypeDate, currentDate: Date) {
@@ -296,8 +313,8 @@ extension AnalysisViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0: return 4
-        case 1: return getCategoryStats().count
-        case 2: return getTransactionStats().count
+        case 1: return cachedCategoryStats.count
+        case 2: return cachedTransactionStats.count
         default: return 0
         }
     }
@@ -325,6 +342,7 @@ extension AnalysisViewController: UITableViewDataSource {
                 cell = tableView.dequeueReusableCell(withIdentifier: SortingCell.reuseIdentifier, for: indexPath) as! SortingCell
                 (cell as! SortingCell).configure(selectedSort: viewModel.sortType) { [weak self] newSort in
                     self?.viewModel.sortType = newSort
+                    self?.updateCache()
                     self?.tableView.reloadData()
                 }
             case 3:
@@ -341,7 +359,10 @@ extension AnalysisViewController: UITableViewDataSource {
             
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: AnalysisCell.reuseIdentifier, for: indexPath) as! AnalysisCell
-            let stats = getCategoryStats()[indexPath.row]
+            guard indexPath.row < cachedCategoryStats.count else {
+                return cell
+            }
+            let stats = cachedCategoryStats[indexPath.row]
             cell.configure(category: stats.category, amount: stats.amount, percentage: stats.percentage)
             
             configureCellAppearance(cell, at: indexPath, forSection: 1)
@@ -349,7 +370,10 @@ extension AnalysisViewController: UITableViewDataSource {
             
         case 2:
             let cell = tableView.dequeueReusableCell(withIdentifier: AnalysisCell.reuseIdentifier, for: indexPath) as! AnalysisCell
-            let stats = getTransactionStats()[indexPath.row]
+            guard indexPath.row < cachedTransactionStats.count else {
+                return cell
+            }
+            let stats = cachedTransactionStats[indexPath.row]
             let category = transactionsViewModel?.category(for: stats.transaction) ?? viewModel.category(for: stats.transaction)
             cell.configure(category: category ?? Category(id: 0, name: "Не известно", emoji: "❓", direction: .outcome), amount: stats.transaction.amount, percentage: stats.percentage)
             
