@@ -1,7 +1,7 @@
 import Foundation
 
 /// Модель финансовой транзакции
-struct Transaction: Identifiable {
+struct Transaction: Identifiable, Equatable {
     let id: Int
     let accountId: Int
     let categoryId: Int

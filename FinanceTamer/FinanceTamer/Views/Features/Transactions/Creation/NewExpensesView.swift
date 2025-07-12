@@ -2,28 +2,38 @@ import SwiftUI
 
 struct NewExpensesView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var currencyService: CurrencyService
+    @EnvironmentObject var transactionsViewModel: TransactionsViewModel
+    private let transactionsService = TransactionsService()
+    private let categoriesService = CategoriesService()
+    private let bankAccountsService = BankAccountsService.shared
     
     var body: some View {
-        Text("Some")
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { dismiss() }) {
-                        HStack {
-                            Image(systemName: "chevron.backward")
-                            Text("Назад")
-                        }
-                        .tint(Color.navigation)
+        TransactionEditView(
+            mode: .create(.outcome),
+            transactionsService: transactionsService,
+            categoriesService: categoriesService,
+            bankAccountsService: bankAccountsService,
+            transactionsViewModel: transactionsViewModel
+        )
+        .environmentObject(currencyService)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarLeading) {
+                Button(action: { dismiss() }) {
+                    HStack {
+                        Image(systemName: "chevron.backward")
+                        Text("Назад")
                     }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {  }) {
-                        Text("Сохранить")
-                            .tint(Color.navigation)
-                    }
+                    .tint(Color.navigation)
                 }
             }
+        }
+        .onDisappear {
+            Task {
+                await transactionsViewModel.loadTransactions()
+            }
+        }
     }
 }
 

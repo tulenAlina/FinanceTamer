@@ -3,23 +3,25 @@ import SwiftUI
 struct ExpensesView: View {
     private let transactionsService = TransactionsService()
     private let categoriesService = CategoriesService()
+    @EnvironmentObject var currencyService: CurrencyService
+    @EnvironmentObject var transactionsViewModel: TransactionsViewModel
+    @State private var showNewExpense = false
     
     var body: some View {
         NavigationStack {
             ZStack {
-                TransactionsListView(
-                    transactionsService: transactionsService,
-                    categoriesService: categoriesService,
-                    direction: .outcome,
-                    title: "Расходы сегодня"
-                )
+                TransactionsListView(title: "Расходы сегодня")
+                    .environmentObject(transactionsViewModel)
+                    .onAppear {
+                        transactionsViewModel.switchDirection(to: .outcome)
+                    }
                 
                 VStack {
                     Spacer()
                     HStack {
                         Spacer()
-                        NavigationLink {
-                            NewExpensesView()
+                        Button {
+                            showNewExpense = true
                         } label: {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 28)
@@ -48,6 +50,16 @@ struct ExpensesView: View {
                     }
                 }
             }
+        }
+        .fullScreenCover(isPresented: $showNewExpense) {
+            NewExpensesView()
+                .environmentObject(currencyService)
+                .environmentObject(transactionsViewModel)
+                .onDisappear {
+                    Task {
+                        await transactionsViewModel.loadTransactions()
+                    }
+                }
         }
     }
 }

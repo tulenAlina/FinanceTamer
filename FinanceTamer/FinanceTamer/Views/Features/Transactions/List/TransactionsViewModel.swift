@@ -8,6 +8,8 @@ final class TransactionsViewModel: ObservableObject {
     @Published var categories: [Category] = []
     @Published var isLoading = false
     @Published var error: Error?
+    @Published var saveSuccess = false
+    @Published var lastUpdateTime = Date()
     @Published private var currency = CurrencyService.shared.currentCurrency
     @Published var sortType: SortType = .dateDescending {
         didSet {
@@ -51,6 +53,7 @@ final class TransactionsViewModel: ObservableObject {
     }
     
     func loadTransactions() async {
+        guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         
@@ -66,6 +69,7 @@ final class TransactionsViewModel: ObservableObject {
             self.allTransactions = transactions
             self.categories = categories
             filterTransactions()
+            self.lastUpdateTime = Date()
         } catch {
             print("Ошибка загрузки: \(error)")
             self.error = error
@@ -94,6 +98,9 @@ final class TransactionsViewModel: ObservableObject {
             updatedAt: Date()
         )
         
+        allTransactions.append(newTransaction)
+        filterTransactions()
+        
         do {
             try await transactionsService.createTransaction(
                 accountId: accountId,
@@ -104,33 +111,41 @@ final class TransactionsViewModel: ObservableObject {
             )
             await loadTransactions()
         } catch {
+            allTransactions.removeAll { $0.id == newTransaction.id }
+            filterTransactions()
             self.error = error
-            os_log("Ошибка создания транзакции: %@", log: .default, type: .error, error.localizedDescription)
         }
     }
     
     func deleteTransaction(withId id: Int) async {
+        let transactionToDelete = allTransactions.first { $0.id == id }
+        allTransactions.removeAll { $0.id == id }
+        filterTransactions()
+        
         do {
             try await transactionsService.deleteTransaction(withId: id)
             await loadTransactions()
         } catch {
+            if let transaction = transactionToDelete {
+                allTransactions.append(transaction)
+                filterTransactions()
+            }
             self.error = error
-            os_log("Ошибка удаления транзакции: %@", log: .default, type: .error, error.localizedDescription)
         }
     }
     
     private func sortTransactions() {
-            switch sortType {
-            case .dateAscending:
-                displayedTransactions.sort { $0.transactionDate < $1.transactionDate }
-            case .dateDescending:
-                displayedTransactions.sort { $0.transactionDate > $1.transactionDate }
-            case .amountAscending:
-                displayedTransactions.sort { abs($0.amount) < abs($1.amount) }
-            case .amountDescending:
-                displayedTransactions.sort { abs($0.amount) > abs($1.amount) }
-            }
+        switch sortType {
+        case .dateAscending:
+            displayedTransactions.sort { $0.transactionDate < $1.transactionDate }
+        case .dateDescending:
+            displayedTransactions.sort { $0.transactionDate > $1.transactionDate }
+        case .amountAscending:
+            displayedTransactions.sort { abs($0.amount) < abs($1.amount) }
+        case .amountDescending:
+            displayedTransactions.sort { abs($0.amount) > abs($1.amount) }
         }
+    }
     
     private func filterTransactions() {
         displayedTransactions = allTransactions.filter { transaction in
@@ -138,5 +153,27 @@ final class TransactionsViewModel: ObservableObject {
             return category.direction == selectedDirection
         }
         sortTransactions()
+    }
+    
+    func updateTransaction(_ transaction: Transaction) async {
+        if let index = displayedTransactions.firstIndex(where: { $0.id == transaction.id }) {
+            displayedTransactions[index] = transaction
         }
+        do {
+            try await transactionsService.updateTransaction(transaction)
+            saveSuccess.toggle()
+            await loadTransactions()
+        } catch {
+            await loadTransactions()
+            self.error = error
+            os_log("Ошибка обновления транзакции: %@", log: .default, type: .error, error.localizedDescription)
+        }
+    }
+    
+    func switchDirection(to direction: Direction) {
+        selectedDirection = direction
+        Task {
+            await loadTransactions()
+        }
+    }
 }
