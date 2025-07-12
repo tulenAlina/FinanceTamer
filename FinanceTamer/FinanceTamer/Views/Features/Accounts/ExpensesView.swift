@@ -5,6 +5,7 @@ struct ExpensesView: View {
     private let categoriesService = CategoriesService()
     @EnvironmentObject var currencyService: CurrencyService
     @EnvironmentObject var transactionsViewModel: TransactionsViewModel
+    @State private var showNewExpense = false
     
     var body: some View {
         NavigationStack {
@@ -19,15 +20,8 @@ struct ExpensesView: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        NavigationLink {
-                            NewExpensesView()
-                                .environmentObject(currencyService)
-                                .environmentObject(transactionsViewModel)
-                                .onDisappear {
-                                    Task {
-                                        await transactionsViewModel.loadTransactions()
-                                    }
-                                }
+                        Button {
+                            showNewExpense = true
                         } label: {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 28)
@@ -56,6 +50,16 @@ struct ExpensesView: View {
                     }
                 }
             }
+        }
+        .fullScreenCover(isPresented: $showNewExpense) {
+            NewExpensesView()
+                .environmentObject(currencyService)
+                .environmentObject(transactionsViewModel)
+                .onDisappear {
+                    Task {
+                        await transactionsViewModel.loadTransactions()
+                    }
+                }
         }
     }
 }

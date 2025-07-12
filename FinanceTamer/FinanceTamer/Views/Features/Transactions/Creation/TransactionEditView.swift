@@ -61,15 +61,13 @@ struct TransactionEditView: View {
             }
             .navigationBarBackButtonHidden(true)
             .toolbar {
-                if case .edit = viewModel.mode {
-                    ToolbarItem(placement: .navigationBarLeading) {
-                        Button(action: { dismiss() }) {
-                            HStack {
-                                Image(systemName: "chevron.backward")
-                                Text("Назад")
-                            }
-                            .tint(Color.navigation)
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { dismiss() }) {
+                        HStack {
+                            Image(systemName: "chevron.backward")
+                            Text("Назад")
                         }
+                        .tint(Color.navigation)
                     }
                 }
                 
