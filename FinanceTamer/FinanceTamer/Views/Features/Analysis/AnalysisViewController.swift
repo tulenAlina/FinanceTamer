@@ -5,6 +5,7 @@ final class AnalysisViewController: UIViewController {
     // MARK: - Properties
     
     var viewModel: MyHistoryViewModel
+    var transactionsViewModel: TransactionsViewModel?
     
     private var startDate: Date = {
         let calendar = Calendar.current
@@ -89,7 +90,11 @@ final class AnalysisViewController: UIViewController {
     
     private func loadData() {
         Task {
-            await viewModel.loadData(from: startDate, to: endDate)
+            if let transactionsVM = transactionsViewModel {
+                await transactionsVM.loadTransactions()
+            } else {
+                await viewModel.loadData(from: startDate, to: endDate)
+            }
             DispatchQueue.main.async {
                 self.tableView.reloadData()
             }
@@ -162,11 +167,28 @@ final class AnalysisViewController: UIViewController {
         present(alert, animated: true)
     }
     
-    private func getCategoryStats() -> [(category: Category, amount: Decimal, percentage: Double)] {
-        var categoryStats: [Int: (amount: Decimal, latestDate: Date)] = [:]
-        let total = viewModel.displayedTransactions.reduce(0) { $0 + abs($1.amount) }
+    private func getFilteredTransactions() -> [Transaction] {
+        guard let transactionsVM = transactionsViewModel else { return [] }
         
-        for transaction in viewModel.displayedTransactions {
+        // Фильтруем транзакции по направлению и датам
+        let filteredTransactions = transactionsVM.allTransactions.filter { transaction in
+            let category = transactionsVM.category(for: transaction)
+            let isCorrectDirection = category?.direction == viewModel.selectedDirection
+            let isInDateRange = transaction.transactionDate >= startDate && transaction.transactionDate <= endDate
+            return isCorrectDirection && isInDateRange
+        }
+        
+        return filteredTransactions
+    }
+    
+    private func getCategoryStats() -> [(category: Category, amount: Decimal, percentage: Double)] {
+        guard let transactionsVM = transactionsViewModel else { return [] }
+        
+        let filteredTransactions = getFilteredTransactions()
+        var categoryStats: [Int: (amount: Decimal, latestDate: Date)] = [:]
+        let total = filteredTransactions.reduce(0) { $0 + abs($1.amount) }
+        
+        for transaction in filteredTransactions {
             if let existing = categoryStats[transaction.categoryId] {
                 let latestDate = transaction.transactionDate > existing.latestDate ? transaction.transactionDate : existing.latestDate
                 categoryStats[transaction.categoryId] = (existing.amount + abs(transaction.amount), latestDate)
@@ -176,7 +198,7 @@ final class AnalysisViewController: UIViewController {
         }
         
         let result = categoryStats.compactMap { categoryId, data -> (category: Category, amount: Decimal, percentage: Double, latestDate: Date)? in
-            guard let category = viewModel.categories.first(where: { $0.id == categoryId }),
+            guard let category = transactionsVM.categories.first(where: { $0.id == categoryId }),
                   total > 0 else { return nil }
             
             let percentage = Double(truncating: (data.amount as NSDecimalNumber).dividing(by: total as NSDecimalNumber)) * 100
@@ -193,6 +215,34 @@ final class AnalysisViewController: UIViewController {
             sortedResult = result.sorted { $0.latestDate < $1.latestDate }.map { ($0.category, $0.amount, $0.percentage) }
         case .dateDescending:
             sortedResult = result.sorted { $0.latestDate > $1.latestDate }.map { ($0.category, $0.amount, $0.percentage) }
+        }
+        
+        return sortedResult
+    }
+    
+    private func getTransactionStats() -> [(transaction: Transaction, percentage: Double)] {
+        guard let transactionsVM = transactionsViewModel else { return [] }
+        
+        let filteredTransactions = getFilteredTransactions()
+        let total = filteredTransactions.reduce(0) { $0 + abs($1.amount) }
+        
+        let result = filteredTransactions.compactMap { transaction -> (transaction: Transaction, percentage: Double)? in
+            guard total > 0 else { return nil }
+            
+            let percentage = Double(truncating: (abs(transaction.amount) as NSDecimalNumber).dividing(by: total as NSDecimalNumber)) * 100
+            return (transaction, percentage)
+        }
+        
+        let sortedResult: [(transaction: Transaction, percentage: Double)]
+        switch viewModel.sortType {
+        case .amountAscending:
+            sortedResult = result.sorted { abs($0.transaction.amount) < abs($1.transaction.amount) }
+        case .amountDescending:
+            sortedResult = result.sorted { abs($0.transaction.amount) > abs($1.transaction.amount) }
+        case .dateAscending:
+            sortedResult = result.sorted { $0.transaction.transactionDate < $1.transaction.transactionDate }
+        case .dateDescending:
+            sortedResult = result.sorted { $0.transaction.transactionDate > $1.transaction.transactionDate }
         }
         
         return sortedResult
@@ -240,13 +290,14 @@ final class AnalysisViewController: UIViewController {
 
 extension AnalysisViewController: UITableViewDataSource {
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 2
+        return 3
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
         case 0: return 4
         case 1: return getCategoryStats().count
+        case 2: return getTransactionStats().count
         default: return 0
         }
     }
@@ -278,7 +329,9 @@ extension AnalysisViewController: UITableViewDataSource {
                 }
             case 3:
                 cell = tableView.dequeueReusableCell(withIdentifier: TotalAmountCell.reuseIdentifier, for: indexPath) as! TotalAmountCell
-                (cell as! TotalAmountCell).configure(amount: viewModel.totalAmount)
+                let filteredTransactions = getFilteredTransactions()
+                let totalAmount = filteredTransactions.reduce(0) { $0 + $1.amount }
+                (cell as! TotalAmountCell).configure(amount: totalAmount)
             default:
                 fatalError("Unexpected row in section 0")
             }
@@ -292,6 +345,15 @@ extension AnalysisViewController: UITableViewDataSource {
             cell.configure(category: stats.category, amount: stats.amount, percentage: stats.percentage)
             
             configureCellAppearance(cell, at: indexPath, forSection: 1)
+            return cell
+            
+        case 2:
+            let cell = tableView.dequeueReusableCell(withIdentifier: AnalysisCell.reuseIdentifier, for: indexPath) as! AnalysisCell
+            let stats = getTransactionStats()[indexPath.row]
+            let category = transactionsViewModel?.category(for: stats.transaction) ?? viewModel.category(for: stats.transaction)
+            cell.configure(category: category ?? Category(id: 0, name: "Не известно", emoji: "❓", direction: .outcome), amount: stats.transaction.amount, percentage: stats.percentage)
+            
+            configureCellAppearance(cell, at: indexPath, forSection: 2)
             return cell
             
         default:
@@ -325,6 +387,23 @@ extension AnalysisViewController: UITableViewDelegate {
         case 1:
             let header = UIView()
             let label = UILabel()
+            label.text = "КАТЕГОРИИ  "
+            label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
+            label.textColor = .secondaryLabel
+            label.translatesAutoresizingMaskIntoConstraints = false
+            header.addSubview(label)
+            
+            NSLayoutConstraint.activate([
+                label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: horizontalInset),
+                label.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
+                label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8)
+            ])
+            
+            return header
+            
+        case 2:
+            let header = UIView()
+            let label = UILabel()
             label.text = "ОПЕРАЦИИ  "
             label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
             label.textColor = .secondaryLabel
@@ -348,6 +427,7 @@ extension AnalysisViewController: UITableViewDelegate {
         switch section {
         case 0: return 54
         case 1: return 44
+        case 2: return 44
         default: return 0
         }
     }
@@ -356,6 +436,7 @@ extension AnalysisViewController: UITableViewDelegate {
         switch indexPath.section {
         case 0: return 44
         case 1: return 44
+        case 2: return 44
         default: return 44
         }
     }

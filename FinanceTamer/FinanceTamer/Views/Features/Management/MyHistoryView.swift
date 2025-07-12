@@ -28,7 +28,11 @@ struct MyHistoryView: View {
     @State private var sortType: SortType = .dateAscending
     
     var filteredTransactions: [Transaction] {
-        let dateRange = startDate...endDate
+        // Убеждаемся, что даты корректные
+        let validStartDate = startDate
+        let validEndDate = endDate >= startDate ? endDate : startDate
+        
+        let dateRange = validStartDate...validEndDate
         return transactionsViewModel.allTransactions.filter { transaction in
             guard let category = transactionsViewModel.category(for: transaction) else { return false }
             return dateRange.contains(transaction.transactionDate) && 
@@ -113,7 +117,10 @@ struct MyHistoryView: View {
             CustomPickerView(date: date)
         }
         .onChange(of: date.wrappedValue) { _, newValue in
-            changeDate(newValue: newValue, typeDate: type)
+            // Добавляем небольшую задержку для корректной обработки изменений
+            DispatchQueue.main.async {
+                changeDate(newValue: newValue, typeDate: type)
+            }
         }
     }
     
@@ -190,17 +197,36 @@ struct MyHistoryView: View {
         case .start:
             components.hour = 00
             components.minute = 00
-            startDate = calendar.date(from: components) ?? newValue
-            if startDate > endDate {
-                endDate = calendar.date(bySettingHour: 23, minute: 59, second: 59, of: newValue) ?? newValue
+            components.second = 00
+            let newStartDate = calendar.date(from: components) ?? newValue
+            
+            // Если новая начальная дата больше конечной, устанавливаем конечную дату равной начальной
+            if newStartDate > endDate {
+                var endComponents = calendar.dateComponents([.year, .month, .day], from: newStartDate)
+                endComponents.hour = 23
+                endComponents.minute = 59
+                endComponents.second = 59
+                endDate = calendar.date(from: endComponents) ?? newStartDate
             }
+            
+            startDate = newStartDate
+            
         case .end:
             components.hour = 23
             components.minute = 59
-            endDate = calendar.date(from: components) ?? newValue
-            if endDate < startDate {
-                startDate = calendar.date(bySettingHour: 0, minute: 0, second: 0, of: newValue) ?? newValue
+            components.second = 59
+            let newEndDate = calendar.date(from: components) ?? newValue
+            
+            // Если новая конечная дата меньше начальной, устанавливаем начальную дату равной конечной
+            if newEndDate < startDate {
+                var startComponents = calendar.dateComponents([.year, .month, .day], from: newEndDate)
+                startComponents.hour = 00
+                startComponents.minute = 00
+                startComponents.second = 00
+                startDate = calendar.date(from: startComponents) ?? newEndDate
             }
+            
+            endDate = newEndDate
         }
     }
     
