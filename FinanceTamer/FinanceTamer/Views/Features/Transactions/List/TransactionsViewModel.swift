@@ -29,6 +29,22 @@ final class TransactionsViewModel: ObservableObject {
     
     private let transactionsService: TransactionsService
     private let categoriesService: CategoriesService
+    private var loadTask: Task<Void, Never>?
+    
+    private func isCancelledError(_ error: Error) -> Bool {
+        if let urlError = error as? URLError, urlError.code == .cancelled {
+            return true
+        }
+        if let networkError = error as? NetworkError {
+            switch networkError {
+            case .networkError(let err):
+                return isCancelledError(err)
+            default:
+                return false
+            }
+        }
+        return false
+    }
     
     var totalAmountToday: String {
         let todayInterval = Date.todayInterval()
@@ -52,29 +68,48 @@ final class TransactionsViewModel: ObservableObject {
     }
     
     func loadTransactions() async {
-        guard !isLoading else { return }
-        isLoading = true
-        defer { isLoading = false }
-        do {
-            let endDate = Date()
-            let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate)!
-            let accounts = try? await BankAccountsService().getAllAccounts()
-            let accountId = accounts?.first?.id ?? 1
-            let dateFormatter = ISO8601DateFormatter()
-            dateFormatter.formatOptions = [.withFullDate]
-            let start = dateFormatter.string(from: startDate)
-            let end = dateFormatter.string(from: endDate)
-            let transactions = try await transactionsService.getTransactions(accountId: accountId, startDate: start, endDate: end)
-            print("Загружено транзакций: \(transactions.count)")
-            let categories = try await categoriesService.getAllCategories()
-            print("Загружено категорий: \(categories.count)")
-            self.allTransactions = transactions
-            self.categories = categories
-            filterTransactions()
-            self.lastUpdateTime = Date()
-        } catch {
-            print("Ошибка загрузки: \(error)")
-            self.error = error
+        // Не отменяем задачу при каждом вызове, только при смене фильтра/экрана
+        loadTask = Task { [weak self] in
+            guard let self = self else { return }
+            if self.isLoading { return }
+            self.isLoading = true
+            print("Начало загрузки транзакций")
+            defer {
+                self.isLoading = false
+                print("Конец загрузки транзакций")
+            }
+            do {
+                let endDate = Date()
+                let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate)!
+                let accounts = try? await BankAccountsService().getAllAccounts()
+                try Task.checkCancellation()
+                let accountId = accounts?.first?.id ?? 1
+                let dateFormatter = ISO8601DateFormatter()
+                dateFormatter.formatOptions = [.withFullDate]
+                let start = dateFormatter.string(from: startDate)
+                let end = dateFormatter.string(from: endDate)
+                let transactions = try await self.transactionsService.getTransactions(accountId: accountId, startDate: start, endDate: end)
+                try Task.checkCancellation()
+                print("Загружено транзакций: \(transactions.count)")
+                let categories = try await self.categoriesService.getAllCategories()
+                try Task.checkCancellation()
+                print("Загружено категорий: \(categories.count)")
+                await MainActor.run {
+                    self.allTransactions = transactions
+                    self.categories = categories
+                    self.filterTransactions()
+                    self.lastUpdateTime = Date()
+                }
+            } catch {
+                if self.isCancelledError(error) || Task.isCancelled {
+                    print("Загрузка отменена")
+                    return
+                }
+                print("Ошибка загрузки: \(error)")
+                await MainActor.run {
+                    self.error = error
+                }
+            }
         }
     }
     
@@ -113,11 +148,20 @@ final class TransactionsViewModel: ObservableObject {
             try await transactionsService.deleteTransaction(id: id)
             await loadTransactions()
         } catch {
+            if let networkError = error as? NetworkError,
+               case .serverError(let code) = networkError, code == 404 {
+                print("Транзакция уже удалена или не найдена, просто обновляем список.")
+                await loadTransactions()
+                return
+            }
             if let transaction = transactionToDelete {
                 allTransactions.append(transaction)
                 filterTransactions()
             }
-            self.error = error
+            print("Ошибка удаления транзакции: \(error)")
+            await MainActor.run {
+                self.error = error
+            }
         }
     }
     
@@ -172,6 +216,8 @@ final class TransactionsViewModel: ObservableObject {
     
     func switchDirection(to direction: Direction) {
         selectedDirection = direction
+        // Отменяем только при смене фильтра/экрана
+        loadTask?.cancel()
         Task {
             await loadTransactions()
         }

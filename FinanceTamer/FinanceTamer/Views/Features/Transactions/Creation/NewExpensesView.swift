@@ -30,9 +30,6 @@ struct NewExpensesView: View {
             }
         }
         .onDisappear {
-            Task {
-                await transactionsViewModel.loadTransactions()
-            }
         }
     }
 }

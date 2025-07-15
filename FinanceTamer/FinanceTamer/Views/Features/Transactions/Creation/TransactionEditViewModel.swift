@@ -157,8 +157,14 @@ class TransactionEditViewModel: ObservableObject {
                     categoryId: category.id,
                     amount: formattedAmount,
                     transactionDate: ISO8601DateFormatter().string(from: transactionDate),
-                    comment: comment.isEmpty ? nil : comment
+                    comment: comment // всегда передавать comment, даже если пустой
                 )
+                // Печать сериализованного JSON
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = .prettyPrinted
+                if let data = try? encoder.encode(request), let json = String(data: data, encoding: .utf8) {
+                    print("JSON для создания транзакции:\n", json)
+                }
                 print("Создаём транзакцию:", request)
                 try await transactionsService.createTransaction(request)
                 await transactionsViewModel?.loadTransactions()

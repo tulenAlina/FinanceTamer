@@ -22,14 +22,14 @@ final class TransactionsService {
     }
     
     // Создать новую транзакцию
-    func createTransaction(_ request: TransactionRequest) async throws -> TransactionResponse {
-        try await networkClient.request(
+    func createTransaction(_ request: TransactionRequest) async throws {
+        _ = try await networkClient.request(
             endpoint: "transactions",
             method: "POST",
             headers: nil,
             body: request,
             queryParameters: nil
-        )
+        ) as EmptyResponse
     }
     
     // Обновить транзакцию
@@ -68,3 +68,4 @@ final class TransactionsService {
         )
     }
 }
+
