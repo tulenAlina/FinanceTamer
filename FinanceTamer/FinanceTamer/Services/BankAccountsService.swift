@@ -1,39 +1,77 @@
 import Foundation
 
-/// Сервис для работы с банковскими счетами
 final class BankAccountsService {
-    static let shared = BankAccountsService()
+    private let networkClient: NetworkClient
     
-    private var mockAccounts: [BankAccount] = [
-        BankAccount(
-            id: 1,
-            userId: 1,
-            name: "Основной счёт",
-            balance: 10000,
-            currency: .rub,
-            createdAt: Date(),
-            updatedAt: Date()
-        )
-    ]
-    
-    private init() {} // Приватный инициализатор для синглтона
-    
-    /// Получает основной счет пользователя
-    func getPrimaryAccount(for userId: Int) async throws -> BankAccount {
-        try await Task.sleep(nanoseconds: 500_000_000)
-        guard let account = mockAccounts.first(where: { $0.userId == userId }) else {
-            throw AppError.notFound
-        }
-        return account
+    init(networkClient: NetworkClient = NetworkClient(
+        baseURL: "https://shmr-finance.ru/api/v1",
+        token: "YQC5f2uw8MWMoiM2H9j96vne"
+    )) {
+        self.networkClient = networkClient
     }
     
-    /// Обновляет данные счета
-    func updateAccount(_ account: BankAccount) async throws {
-        try await Task.sleep(nanoseconds: 500_000_000)
-        if let index = mockAccounts.firstIndex(where: { $0.id == account.id }) {
-            mockAccounts[index] = account
-        } else {
-            throw AppError.notFound
-        }
+    // Получить все счета пользователя
+    func getAllAccounts() async throws -> [BankAccount] {
+        try await networkClient.request(
+            endpoint: "accounts",
+            method: "GET",
+            headers: nil,
+            body: Optional<String>.none,
+            queryParameters: nil
+        )
+    }
+    
+    // Получить счет по id
+    func getAccount(by id: Int) async throws -> BankAccount {
+        try await networkClient.request(
+            endpoint: "accounts/\(id)",
+            method: "GET",
+            headers: nil,
+            body: Optional<String>.none,
+            queryParameters: nil
+        )
+    }
+    
+    // Создать новый счет
+    struct AccountCreateRequest: Encodable {
+        let name: String
+        let balance: String
+        let currency: String
+    }
+    func createAccount(_ request: AccountCreateRequest) async throws -> BankAccount {
+        try await networkClient.request(
+            endpoint: "accounts",
+            method: "POST",
+            headers: nil,
+            body: request,
+            queryParameters: nil
+        )
+    }
+    
+    // Обновить счет
+    struct AccountUpdateRequest: Encodable {
+        let name: String
+        let balance: String
+        let currency: String
+    }
+    func updateAccount(id: Int, request: AccountUpdateRequest) async throws -> BankAccount {
+        try await networkClient.request(
+            endpoint: "accounts/\(id)",
+            method: "PUT",
+            headers: nil,
+            body: request,
+            queryParameters: nil
+        )
+    }
+    
+    // Удалить счет
+    func deleteAccount(id: Int) async throws {
+        _ = try await networkClient.request(
+            endpoint: "accounts/\(id)",
+            method: "DELETE",
+            headers: nil,
+            body: Optional<String>.none,
+            queryParameters: nil
+        ) as EmptyResponse
     }
 }

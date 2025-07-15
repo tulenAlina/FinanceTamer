@@ -48,3 +48,5 @@ struct Category: Identifiable, Codable, Hashable {
         try container.encode(direction == .income, forKey: .isIncome)
     }
 }
+
+// Удалён extension Category.mockCategories, чтобы не использовать моковые категории.

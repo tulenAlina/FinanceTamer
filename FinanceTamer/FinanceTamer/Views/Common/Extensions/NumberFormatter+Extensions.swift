@@ -1,10 +1,10 @@
 import Foundation
 
 extension NumberFormatter {
-    static var currency: NumberFormatter {
+    static func currency(symbol: String = "₽") -> NumberFormatter {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencySymbol = CurrencyService.shared.currentCurrency.symbol
+        formatter.currencySymbol = symbol
         formatter.maximumFractionDigits = 2
         formatter.minimumFractionDigits = 0
         formatter.decimalSeparator = ","

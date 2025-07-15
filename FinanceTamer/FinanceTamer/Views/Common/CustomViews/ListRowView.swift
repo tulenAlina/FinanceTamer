@@ -7,13 +7,6 @@ struct ListRowView: View {
     private var transactionAmount: String
     private var transactionDate: String?
     private var needChevron: Bool
-    private var currencySymbol: String {
-        switch CurrencyService.shared.currentCurrency {
-        case .rub: return "₽"
-        case .usd: return "$"
-        case .eur: return "€"
-        }
-    }
     
     init(
         emoji: String? = nil,
@@ -52,7 +45,7 @@ struct ListRowView: View {
             .padding(.vertical, 10)
             
             VStack(alignment: .trailing) {
-                Text(transactionAmount.replacingOccurrences(of: "₽", with: currencySymbol))
+                Text(transactionAmount.replacingOccurrences(of: "₽", with: "₽"))
                     .font(.system(size: 17, weight: .regular))
                 if let transactionDate = transactionDate {
                     Text(transactionDate)

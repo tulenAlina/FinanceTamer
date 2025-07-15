@@ -41,6 +41,19 @@ struct CategoriesView: View {
                     await viewModel.loadCategories(for: selectedDirection)
                 }
             }
+            .overlay(
+                Group {
+                    if viewModel.isLoading {
+                        Color.black.opacity(0.1).ignoresSafeArea()
+                        ProgressView()
+                    }
+                }
+            )
+            .alert("Ошибка", isPresented: Binding(get: { viewModel.error != nil }, set: { _ in viewModel.error = nil })) {
+                Button("OK", role: .cancel) { viewModel.error = nil }
+            } message: {
+                Text(viewModel.error?.localizedDescription ?? "Неизвестная ошибка")
+            }
         }
     }
     

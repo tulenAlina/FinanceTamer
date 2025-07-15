@@ -18,6 +18,8 @@
 		8726776A2E208B0D00186972 /* TransactionEditView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872677692E208B0C00186972 /* TransactionEditView.swift */; };
 		8726776C2E208B6C00186972 /* CategoryPickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8726776B2E208B6A00186972 /* CategoryPickerView.swift */; };
 		8726776E2E208BE600186972 /* TransactionEditViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8726776D2E208BE500186972 /* TransactionEditViewModel.swift */; };
+		872678202E26C21600186972 /* NetworkClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8726781F2E26C20D00186972 /* NetworkClient.swift */; };
+		872678222E26C4B600186972 /* EmptyResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872678212E26C4AC00186972 /* EmptyResponse.swift */; };
 		876617692DFB0C2A008001B4 /* FinanceTamerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 876617682DFB0C2A008001B4 /* FinanceTamerApp.swift */; };
 		8766176B2DFB0C2A008001B4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766176A2DFB0C2A008001B4 /* ContentView.swift */; };
 		876617702DFB0C2C008001B4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8766176F2DFB0C2C008001B4 /* Preview Assets.xcassets */; };
@@ -85,6 +87,8 @@
 		872677692E208B0C00186972 /* TransactionEditView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionEditView.swift; sourceTree = "<group>"; };
 		8726776B2E208B6A00186972 /* CategoryPickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryPickerView.swift; sourceTree = "<group>"; };
 		8726776D2E208BE500186972 /* TransactionEditViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionEditViewModel.swift; sourceTree = "<group>"; };
+		8726781F2E26C20D00186972 /* NetworkClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkClient.swift; sourceTree = "<group>"; };
+		872678212E26C4AC00186972 /* EmptyResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyResponse.swift; sourceTree = "<group>"; };
 		876617652DFB0C2A008001B4 /* FinanceTamer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinanceTamer.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		876617682DFB0C2A008001B4 /* FinanceTamerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceTamerApp.swift; sourceTree = "<group>"; };
 		8766176A2DFB0C2A008001B4 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -200,6 +204,7 @@
 		876617762DFB18F3008001B4 /* Models */ = {
 			isa = PBXGroup;
 			children = (
+				872678212E26C4AC00186972 /* EmptyResponse.swift */,
 				87B7504F2E060BE8000C66F2 /* Currency.swift */,
 				8766177A2DFB199D008001B4 /* Direction.swift */,
 				8766177C2DFB19C2008001B4 /* Category.swift */,
@@ -212,6 +217,7 @@
 		876617772DFB1906008001B4 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				8726781F2E26C20D00186972 /* NetworkClient.swift */,
 				87B7525A2E0E0CCC000C66F2 /* CurrencyService.swift */,
 				876617842DFB7F05008001B4 /* TransactionsFileCache.swift */,
 				876617862DFB8231008001B4 /* CategoriesService.swift */,
@@ -513,6 +519,7 @@
 				87B752572E0D5257000C66F2 /* CurrencyPickerView.swift in Sources */,
 				87B7504E2E05D91A000C66F2 /* FileErrors.swift in Sources */,
 				872677012E1D6B5500186972 /* AnalysisViewController.swift in Sources */,
+				872678202E26C21600186972 /* NetworkClient.swift in Sources */,
 				8726776C2E208B6C00186972 /* CategoryPickerView.swift in Sources */,
 				87B7518C2E06454D000C66F2 /* ExpensesView.swift in Sources */,
 				87B7518D2E06454D000C66F2 /* ExpensesHistoryView.swift in Sources */,
@@ -526,6 +533,7 @@
 				8766177B2DFB199D008001B4 /* Direction.swift in Sources */,
 				8766177D2DFB19C2008001B4 /* Category.swift in Sources */,
 				87B750692E0621F7000C66F2 /* Transaction+Category.swift in Sources */,
+				872678222E26C4B600186972 /* EmptyResponse.swift in Sources */,
 				872677092E1D6BBE00186972 /* AnalysisCell.swift in Sources */,
 				87B751832E06454D000C66F2 /* CategoriesView.swift in Sources */,
 				8726776E2E208BE600186972 /* TransactionEditViewModel.swift in Sources */,

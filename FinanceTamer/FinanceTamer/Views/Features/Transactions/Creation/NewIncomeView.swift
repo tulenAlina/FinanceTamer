@@ -6,7 +6,7 @@ struct NewIncomeView: View {
     @EnvironmentObject var transactionsViewModel: TransactionsViewModel
     private let transactionsService = TransactionsService()
     private let categoriesService = CategoriesService()
-    private let bankAccountsService = BankAccountsService.shared
+    private let bankAccountsService = BankAccountsService()
     
     var body: some View {
         TransactionEditView(
@@ -38,5 +38,7 @@ struct NewIncomeView: View {
 }
 
 #Preview {
+    let currencyService = CurrencyService()
     NewIncomeView()
+        .environmentObject(currencyService)
 }

@@ -8,7 +8,7 @@ struct FinanceTamerApp: App {
         selectedDirection: .outcome
     )
     
-    private let currencyService = CurrencyService.shared
+    private let currencyService = CurrencyService()
     
     var body: some Scene {
         WindowGroup {

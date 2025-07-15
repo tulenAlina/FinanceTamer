@@ -8,7 +8,7 @@ final class AnalysisViewController: UIViewController {
     var transactionsViewModel: TransactionsViewModel?
     
     private var cachedCategoryStats: [(category: Category, amount: Decimal, percentage: Double)] = []
-    private var cachedTransactionStats: [(transaction: Transaction, percentage: Double)] = []
+    private var cachedTransactionStats: [(transaction: TransactionResponse, percentage: Double)] = []
     private var lastUpdateTime: Date = Date()
     
     private var startDate: Date = {
@@ -49,6 +49,13 @@ final class AnalysisViewController: UIViewController {
     private let horizontalInset: CGFloat = 16
     private let cornerRadius: CGFloat = 10
     
+    private var activityIndicator: UIActivityIndicatorView = {
+        let indicator = UIActivityIndicatorView(style: .large)
+        indicator.hidesWhenStopped = true
+        indicator.translatesAutoresizingMaskIntoConstraints = false
+        return indicator
+    }()
+    
     // MARK: - Initialization
     
     init(viewModel: MyHistoryViewModel) {
@@ -66,6 +73,7 @@ final class AnalysisViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupNavigationBar()
+        setupActivityIndicator()
         loadData()
     }
     
@@ -92,16 +100,35 @@ final class AnalysisViewController: UIViewController {
         title = "Анализ"
     }
     
+    private func setupActivityIndicator() {
+        view.addSubview(activityIndicator)
+        NSLayoutConstraint.activate([
+            activityIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            activityIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+    }
+    
     private func loadData() {
+        activityIndicator.startAnimating()
         Task {
-            if let transactionsVM = transactionsViewModel {
-                await transactionsVM.loadTransactions()
-            } else {
-                await viewModel.loadData(from: startDate, to: endDate)
-            }
-            DispatchQueue.main.async {
-                self.updateCache()
-                self.tableView.reloadData()
+            do {
+                if let transactionsVM = transactionsViewModel {
+                    await transactionsVM.loadTransactions()
+                } else {
+                    let accounts = try? await BankAccountsService().getAllAccounts()
+                    let accountId = accounts?.first?.id ?? 1
+                    await viewModel.loadData(from: startDate, to: endDate, accountId: accountId)
+                }
+                DispatchQueue.main.async {
+                    self.updateCache()
+                    self.tableView.reloadData()
+                    self.activityIndicator.stopAnimating()
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    self.activityIndicator.stopAnimating()
+                    self.showError(error)
+                }
             }
         }
     }
@@ -110,6 +137,12 @@ final class AnalysisViewController: UIViewController {
         cachedCategoryStats = getCategoryStats()
         cachedTransactionStats = getTransactionStats()
         lastUpdateTime = Date()
+    }
+    
+    private func showError(_ error: Error) {
+        let alert = UIAlertController(title: "Ошибка", message: error.localizedDescription, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
     
     @objc private func backButtonTapped() {
@@ -183,43 +216,45 @@ final class AnalysisViewController: UIViewController {
         present(alert, animated: true)
     }
     
-    private func getFilteredTransactions() -> [Transaction] {
+    private func getFilteredTransactions() -> [TransactionResponse] {
         guard let transactionsVM = transactionsViewModel else { return [] }
-        
-        let filteredTransactions = transactionsVM.allTransactions.filter { transaction in
+        let isoFormatter = ISO8601DateFormatter()
+        let filteredTransactions = transactionsVM.allTransactions.compactMap { transaction -> TransactionResponse? in
+            // transaction: TransactionResponse
             let category = transactionsVM.category(for: transaction)
             let isCorrectDirection = category?.direction == viewModel.selectedDirection
-            let isInDateRange = transaction.transactionDate >= startDate && transaction.transactionDate <= endDate
-            return isCorrectDirection && isInDateRange
+            guard let date = isoFormatter.date(from: transaction.transactionDate) else { return nil }
+            let isInDateRange = date >= startDate && date <= endDate
+            return (isCorrectDirection && isInDateRange) ? transaction : nil
         }
-        
         return filteredTransactions
     }
-    
+
     private func getCategoryStats() -> [(category: Category, amount: Decimal, percentage: Double)] {
         guard let transactionsVM = transactionsViewModel else { return [] }
-        
+        let isoFormatter = ISO8601DateFormatter()
         let filteredTransactions = getFilteredTransactions()
         var categoryStats: [Int: (amount: Decimal, latestDate: Date)] = [:]
-        let total = filteredTransactions.reduce(0) { $0 + abs($1.amount) }
-        
+        let total = filteredTransactions.reduce(Decimal(0)) { sum, transaction in
+            sum + (Decimal(string: transaction.amount) ?? 0)
+        }
         for transaction in filteredTransactions {
-            if let existing = categoryStats[transaction.categoryId] {
-                let latestDate = transaction.transactionDate > existing.latestDate ? transaction.transactionDate : existing.latestDate
-                categoryStats[transaction.categoryId] = (existing.amount + abs(transaction.amount), latestDate)
+            let categoryId = transaction.category.id
+            let amount = Decimal(string: transaction.amount) ?? 0
+            let date = isoFormatter.date(from: transaction.transactionDate) ?? Date.distantPast
+            if let existing = categoryStats[categoryId] {
+                let latestDate = date > existing.latestDate ? date : existing.latestDate
+                categoryStats[categoryId] = (existing.amount + amount, latestDate)
             } else {
-                categoryStats[transaction.categoryId] = (abs(transaction.amount), transaction.transactionDate)
+                categoryStats[categoryId] = (amount, date)
             }
         }
-        
         let result = categoryStats.compactMap { categoryId, data -> (category: Category, amount: Decimal, percentage: Double, latestDate: Date)? in
             guard let category = transactionsVM.categories.first(where: { $0.id == categoryId }),
                   total > 0 else { return nil }
-            
-            let percentage = Double(truncating: (data.amount as NSDecimalNumber).dividing(by: total as NSDecimalNumber)) * 100
+            let percentage = (data.amount / total as NSDecimalNumber).doubleValue * 100
             return (category, data.amount, percentage, data.latestDate)
         }
-        
         let sortedResult: [(category: Category, amount: Decimal, percentage: Double)]
         switch viewModel.sortType {
         case .amountAscending:
@@ -231,35 +266,40 @@ final class AnalysisViewController: UIViewController {
         case .dateDescending:
             sortedResult = result.sorted { $0.latestDate > $1.latestDate }.map { ($0.category, $0.amount, $0.percentage) }
         }
-        
         return sortedResult
     }
-    
-    private func getTransactionStats() -> [(transaction: Transaction, percentage: Double)] {
-        guard let transactionsVM = transactionsViewModel else { return [] }
-        
+
+    private func getTransactionStats() -> [(transaction: TransactionResponse, percentage: Double)] {
+        let isoFormatter = ISO8601DateFormatter()
         let filteredTransactions = getFilteredTransactions()
-        let total = filteredTransactions.reduce(0) { $0 + abs($1.amount) }
-        
-        let result = filteredTransactions.compactMap { transaction -> (transaction: Transaction, percentage: Double)? in
+        let total = filteredTransactions.reduce(Decimal(0)) { sum, transaction in
+            sum + (Decimal(string: transaction.amount) ?? 0)
+        }
+        let result = filteredTransactions.compactMap { transaction -> (transaction: TransactionResponse, percentage: Double)? in
             guard total > 0 else { return nil }
-            
-            let percentage = Double(truncating: (abs(transaction.amount) as NSDecimalNumber).dividing(by: total as NSDecimalNumber)) * 100
+            let amount = Decimal(string: transaction.amount) ?? 0
+            let percentage = (amount / total as NSDecimalNumber).doubleValue * 100
             return (transaction, percentage)
         }
-        
-        let sortedResult: [(transaction: Transaction, percentage: Double)]
+        let sortedResult: [(transaction: TransactionResponse, percentage: Double)]
         switch viewModel.sortType {
         case .amountAscending:
-            sortedResult = result.sorted { abs($0.transaction.amount) < abs($1.transaction.amount) }
+            sortedResult = result.sorted { (Decimal(string: $0.transaction.amount) ?? 0) < (Decimal(string: $1.transaction.amount) ?? 0) }
         case .amountDescending:
-            sortedResult = result.sorted { abs($0.transaction.amount) > abs($1.transaction.amount) }
+            sortedResult = result.sorted { (Decimal(string: $0.transaction.amount) ?? 0) > (Decimal(string: $1.transaction.amount) ?? 0) }
         case .dateAscending:
-            sortedResult = result.sorted { $0.transaction.transactionDate < $1.transaction.transactionDate }
+            sortedResult = result.sorted {
+                let d0 = isoFormatter.date(from: $0.transaction.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transaction.transactionDate) ?? Date.distantPast
+                return d0 < d1
+            }
         case .dateDescending:
-            sortedResult = result.sorted { $0.transaction.transactionDate > $1.transaction.transactionDate }
+            sortedResult = result.sorted {
+                let d0 = isoFormatter.date(from: $0.transaction.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transaction.transactionDate) ?? Date.distantPast
+                return d0 > d1
+            }
         }
-        
         return sortedResult
     }
     
@@ -346,7 +386,7 @@ extension AnalysisViewController: UITableViewDataSource {
             case 3:
                 cell = tableView.dequeueReusableCell(withIdentifier: TotalAmountCell.reuseIdentifier, for: indexPath) as! TotalAmountCell
                 let filteredTransactions = getFilteredTransactions()
-                let totalAmount = filteredTransactions.reduce(0) { $0 + $1.amount }
+                let totalAmount = filteredTransactions.reduce(Decimal(0)) { $0 + (Decimal(string: $1.amount) ?? 0) }
                 (cell as! TotalAmountCell).configure(amount: totalAmount)
             default:
                 fatalError("Unexpected row in section 0")
@@ -373,7 +413,7 @@ extension AnalysisViewController: UITableViewDataSource {
             }
             let stats = cachedTransactionStats[indexPath.row]
             let category = transactionsViewModel?.category(for: stats.transaction) ?? viewModel.category(for: stats.transaction)
-            cell.configure(category: category ?? Category(id: 0, name: "Не известно", emoji: "❓", direction: .outcome), amount: stats.transaction.amount, percentage: stats.percentage)
+            cell.configure(category: category ?? Category(id: 0, name: "Не известно", emoji: "❓", direction: .outcome), amount: Decimal(string: stats.transaction.amount) ?? 0, percentage: stats.percentage)
             
             configureCellAppearance(cell, at: indexPath, forSection: 2)
             return cell

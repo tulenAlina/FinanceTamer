@@ -3,14 +3,14 @@ import OSLog
 
 @MainActor
 final class TransactionsViewModel: ObservableObject {
-    @Published var displayedTransactions: [Transaction] = []
-    @Published var allTransactions: [Transaction] = []
+    @Published var displayedTransactions: [TransactionResponse] = []
+    @Published var allTransactions: [TransactionResponse] = []
     @Published var categories: [Category] = []
     @Published var isLoading = false
     @Published var error: Error?
     @Published var saveSuccess = false
     @Published var lastUpdateTime = Date()
-    @Published private var currency = CurrencyService.shared.currentCurrency
+    @Published private var currency = Currency.rub
     @Published var sortType: SortType = .dateDescending {
         didSet {
             sortTransactions()
@@ -18,7 +18,7 @@ final class TransactionsViewModel: ObservableObject {
     }
     
     var totalAmount: Decimal {
-        displayedTransactions.reduce(0) { $0 + $1.amount }
+        displayedTransactions.reduce(0) { $0 + (Decimal(string: $1.amount) ?? 0) }
     }
     
     var selectedDirection: Direction = .outcome {
@@ -32,12 +32,13 @@ final class TransactionsViewModel: ObservableObject {
     
     var totalAmountToday: String {
         let todayInterval = Date.todayInterval()
+        let isoFormatter = ISO8601DateFormatter()
         let todayTransactions = displayedTransactions.filter { transaction in
-            transaction.transactionDate >= todayInterval.lowerBound &&
-            transaction.transactionDate <= todayInterval.upperBound
+            guard let date = isoFormatter.date(from: transaction.transactionDate) else { return false }
+            return date >= todayInterval.lowerBound && date <= todayInterval.upperBound
         }
-        let total = todayTransactions.reduce(0) { $0 + $1.amount }
-        return NumberFormatter.currency.string(from: NSDecimalNumber(decimal: total)) ?? "0 ₽"
+        let total = todayTransactions.reduce(0) { $0 + (Decimal(string: $1.amount) ?? 0) }
+        return NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: total)) ?? "0 ₽"
     }
     
     init(
@@ -48,24 +49,25 @@ final class TransactionsViewModel: ObservableObject {
         self.transactionsService = transactionsService
         self.categoriesService = categoriesService
         self.selectedDirection = selectedDirection
-        CurrencyService.shared.$currentCurrency
-            .assign(to: &$currency)
     }
     
     func loadTransactions() async {
         guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
-        
         do {
             let endDate = Date()
             let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate)!
-            let transactions = try await transactionsService.getTransactions(for: startDate...endDate)
+            let accounts = try? await BankAccountsService().getAllAccounts()
+            let accountId = accounts?.first?.id ?? 1
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withFullDate]
+            let start = dateFormatter.string(from: startDate)
+            let end = dateFormatter.string(from: endDate)
+            let transactions = try await transactionsService.getTransactions(accountId: accountId, startDate: start, endDate: end)
             print("Загружено транзакций: \(transactions.count)")
-            
-            let categories = try await categoriesService.categories()
+            let categories = try await categoriesService.getAllCategories()
             print("Загружено категорий: \(categories.count)")
-            
             self.allTransactions = transactions
             self.categories = categories
             filterTransactions()
@@ -76,8 +78,8 @@ final class TransactionsViewModel: ObservableObject {
         }
     }
     
-    func category(for transaction: Transaction) -> Category? {
-        return categories.first { $0.id == transaction.categoryId }
+    func category(for transaction: TransactionResponse) -> Category? {
+        return categories.first { $0.id == transaction.category.id }
     }
     
     func createTransaction(
@@ -87,32 +89,18 @@ final class TransactionsViewModel: ObservableObject {
         categoryId: Int,
         comment: String? = nil
     ) async {
-        let newTransaction = Transaction(
-            id: 0, 
+        let formatter = ISO8601DateFormatter()
+        let request = TransactionRequest(
             accountId: accountId,
             categoryId: categoryId,
-            amount: amount,
-            transactionDate: transactionDate,
-            comment: comment,
-            createdAt: Date(),
-            updatedAt: Date()
+            amount: amount.description,
+            transactionDate: formatter.string(from: transactionDate),
+            comment: comment
         )
-        
-        allTransactions.append(newTransaction)
-        filterTransactions()
-        
         do {
-            try await transactionsService.createTransaction(
-                accountId: accountId,
-                amount: amount,
-                transactionDate: transactionDate,
-                categoryId: categoryId,
-                comment: comment
-            )
+            try await transactionsService.createTransaction(request)
             await loadTransactions()
         } catch {
-            allTransactions.removeAll { $0.id == newTransaction.id }
-            filterTransactions()
             self.error = error
         }
     }
@@ -121,9 +109,8 @@ final class TransactionsViewModel: ObservableObject {
         let transactionToDelete = allTransactions.first { $0.id == id }
         allTransactions.removeAll { $0.id == id }
         filterTransactions()
-        
         do {
-            try await transactionsService.deleteTransaction(withId: id)
+            try await transactionsService.deleteTransaction(id: id)
             await loadTransactions()
         } catch {
             if let transaction = transactionToDelete {
@@ -135,32 +122,45 @@ final class TransactionsViewModel: ObservableObject {
     }
     
     private func sortTransactions() {
+        let isoFormatter = ISO8601DateFormatter()
         switch sortType {
         case .dateAscending:
-            displayedTransactions.sort { $0.transactionDate < $1.transactionDate }
+            displayedTransactions.sort {
+                let d0 = isoFormatter.date(from: $0.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transactionDate) ?? Date.distantPast
+                return d0 < d1
+            }
         case .dateDescending:
-            displayedTransactions.sort { $0.transactionDate > $1.transactionDate }
+            displayedTransactions.sort {
+                let d0 = isoFormatter.date(from: $0.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transactionDate) ?? Date.distantPast
+                return d0 > d1
+            }
         case .amountAscending:
-            displayedTransactions.sort { abs($0.amount) < abs($1.amount) }
+            displayedTransactions.sort { (Decimal(string: $0.amount) ?? 0) < (Decimal(string: $1.amount) ?? 0) }
         case .amountDescending:
-            displayedTransactions.sort { abs($0.amount) > abs($1.amount) }
+            displayedTransactions.sort { (Decimal(string: $0.amount) ?? 0) > (Decimal(string: $1.amount) ?? 0) }
         }
     }
     
     private func filterTransactions() {
         displayedTransactions = allTransactions.filter { transaction in
-            guard let category = category(for: transaction) else {return false }
+            guard let category = category(for: transaction) else { return false }
             return category.direction == selectedDirection
         }
         sortTransactions()
     }
     
-    func updateTransaction(_ transaction: Transaction) async {
-        if let index = displayedTransactions.firstIndex(where: { $0.id == transaction.id }) {
-            displayedTransactions[index] = transaction
-        }
+    func updateTransaction(_ transaction: TransactionResponse) async {
+        let request = TransactionRequest(
+            accountId: transaction.account.id,
+            categoryId: transaction.category.id,
+            amount: transaction.amount,
+            transactionDate: transaction.transactionDate,
+            comment: transaction.comment
+        )
         do {
-            try await transactionsService.updateTransaction(transaction)
+            try await transactionsService.updateTransaction(id: transaction.id, request: request)
             saveSuccess.toggle()
             await loadTransactions()
         } catch {

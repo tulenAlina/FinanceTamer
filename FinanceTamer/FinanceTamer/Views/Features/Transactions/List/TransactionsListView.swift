@@ -9,7 +9,8 @@ struct TransactionsListView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        let transactions = viewModel.displayedTransactions
+        return NavigationStack {
             ZStack {
                 List {
                     Section {
@@ -23,10 +24,9 @@ struct TransactionsListView: View {
                             }
                             .pickerStyle(.menu)
                         }
-                        
                         ListRowView(
                             categoryName: "Всего",
-                            transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: viewModel.totalAmount)) ?? "0 ₽",
+                            transactionAmount: NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: viewModel.totalAmount)) ?? "0 ₽",
                             needChevron: false
                         )
                     } header: {
@@ -38,43 +38,10 @@ struct TransactionsListView: View {
                             .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                             .listRowBackground(Color.clear)
                     }
-                    
                     Section {
-                        ForEach(viewModel.displayedTransactions) { transaction in
-                            let category = viewModel.category(for: transaction)
-                            
-                            NavigationLink {
-                                TransactionEditView(
-                                    mode: .edit(transaction),
-                                    transactionsService: TransactionsService(),
-                                    categoriesService: CategoriesService(),
-                                    bankAccountsService: BankAccountsService.shared,
-                                    transactionsViewModel: viewModel
-                                )
-                                .environmentObject(CurrencyService.shared)
-                                .environmentObject(viewModel)
-                                .onDisappear {
-                                    Task {
-                                        await viewModel.loadTransactions()
-                                    }
-                                }
-                            } label: {
-                                VStack(spacing: 0) {
-                                    ListRowView(
-                                        emoji: category.map { String($0.emoji) } ?? "❓",
-                                        categoryName: category?.name ?? "Не известно",
-                                        transactionComment: transaction.comment?.isEmpty == false ? transaction.comment : nil,
-                                        transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: transaction.amount)) ?? "",
-                                        needChevron: false
-                                    )
-                                }
-                            }
-                            .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
-                            .alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
-                                return viewDimensions[.listRowSeparatorLeading] + 46
-                            }
+                        ForEach(transactions) { transaction in
+                            TransactionRowNavigationView(transaction: transaction, viewModel: viewModel)
                         }
-                        
                     } header: {
                         Text("ОПЕРАЦИИ")
                             .font(.system(size: 13, weight: .regular))
@@ -94,6 +61,14 @@ struct TransactionsListView: View {
                 .onChange(of: viewModel.displayedTransactions) { _, _ in
                     // Автоматическое обновление при изменении транзакций
                 }
+                .alert("Ошибка", isPresented: Binding(
+                    get: { viewModel.error != nil },
+                    set: { newValue in if !newValue { viewModel.error = nil } }
+                )) {
+                    Button("OK", role: .cancel) { viewModel.error = nil }
+                } message: {
+                    Text(viewModel.error?.localizedDescription ?? "Неизвестная ошибка")
+                }
             }
         }
     }
@@ -106,4 +81,43 @@ struct TransactionsListView: View {
             categoriesService: CategoriesService(),
             selectedDirection: .outcome
         ))
+}
+
+// Компонент для строки транзакции
+struct TransactionRowNavigationView: View {
+    let transaction: TransactionResponse
+    @ObservedObject var viewModel: TransactionsViewModel
+    var body: some View {
+        let category = viewModel.category(for: transaction)
+        return NavigationLink {
+            TransactionEditView(
+                mode: .edit(transaction),
+                transactionsService: TransactionsService(),
+                categoriesService: CategoriesService(),
+                bankAccountsService: BankAccountsService(),
+                transactionsViewModel: viewModel
+            )
+            .environmentObject(CurrencyService())
+            .environmentObject(viewModel)
+            .onDisappear {
+                Task {
+                    await viewModel.loadTransactions()
+                }
+            }
+        } label: {
+            VStack(spacing: 0) {
+                ListRowView(
+                    emoji: category.map { String($0.emoji) } ?? "❓",
+                    categoryName: category?.name ?? "Не известно",
+                    transactionComment: transaction.comment?.isEmpty == false ? transaction.comment : nil,
+                    transactionAmount: NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: Decimal(string: transaction.amount) ?? 0)) ?? "",
+                    needChevron: false
+                )
+            }
+        }
+        .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
+        .alignmentGuide(.listRowSeparatorLeading) { viewDimensions in
+            viewDimensions[.listRowSeparatorLeading] + 46
+        }
+    }
 }

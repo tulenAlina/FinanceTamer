@@ -2,34 +2,53 @@ import SwiftUI
 
 @MainActor
 class ScoreViewModel: ObservableObject {
-    private let accountsService = BankAccountsService.shared
-    private let currencyService = CurrencyService.shared
+    private let accountsService = BankAccountsService()
+    private let currencyService = CurrencyService()
     
     @Published var balance: Decimal = 0
     @Published var balanceString: String = ""
     @Published var originalBalance: Decimal = 0
     @Published var isInitialLoad = true
+    @Published var errorMessage: String?
     
     var currency: Currency {
         get { currencyService.currentCurrency }
         set { currencyService.currentCurrency = newValue }
     }
     
+    var currencySymbol: String {
+        switch currency {
+        case .rub: return "₽"
+        case .usd: return "$"
+        case .eur: return "€"
+        }
+    }
+    
     func loadAccount() {
         Task {
             do {
-                let account = try await accountsService.getPrimaryAccount(for: 1)
-                balance = account.balance
-                originalBalance = account.balance
+                let accounts = try await accountsService.getAllAccounts()
+                guard let account = accounts.first else { return }
+                
+                if let decimalBalance = Decimal(string: account.balance) {
+                    balance = decimalBalance
+                    originalBalance = decimalBalance
+                } else {
+                    balance = 0
+                    originalBalance = 0
+                }
                 
                 // Загружаем валюту из аккаунта только при первой загрузке
                 if isInitialLoad {
-                    currency = account.currency
+                    if let currencyEnum = Currency(rawValue: account.currency) {
+                        currency = currencyEnum
+                    }
                     isInitialLoad = false
                 }
                 
                 updateBalanceString()
             } catch {
+                errorMessage = error.localizedDescription
                 print("Error loading account: \(error)")
             }
         }
@@ -47,10 +66,14 @@ class ScoreViewModel: ObservableObject {
             
             balance = newBalance
             Task {
-                var account = try await accountsService.getPrimaryAccount(for: 1)
-                account.balance = balance
-                account.currency = currency
-                try await accountsService.updateAccount(account)
+                let accounts = try await accountsService.getAllAccounts()
+                guard let account = accounts.first else { return }
+                let request = BankAccountsService.AccountUpdateRequest(
+                    name: account.name,
+                    balance: String(format: "%.2f", NSDecimalNumber(decimal: balance).doubleValue),
+                    currency: currency.rawValue
+                )
+                _ = try await accountsService.updateAccount(id: account.id, request: request)
                 originalBalance = balance // Обновляем исходное значение
                 updateBalanceString()
             }

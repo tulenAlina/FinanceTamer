@@ -4,7 +4,7 @@ import SwiftUI
 class TransactionEditViewModel: ObservableObject {
     enum Mode {
         case create(Direction)
-        case edit(Transaction)
+        case edit(TransactionResponse)
     }
     
     let mode: Mode
@@ -21,6 +21,8 @@ class TransactionEditViewModel: ObservableObject {
     @Published var saveSuccess = false
     @Published var showValidationAlert = false
     @Published var validationMessage = ""
+    @Published var isLoading = false
+    @Published var error: Error?
     
     var onSave: (() -> Void)?
     
@@ -62,7 +64,8 @@ class TransactionEditViewModel: ObservableObject {
     
     var transactionDirection: Direction {
         if case let .edit(transaction) = mode {
-            return transaction.amount > 0 ? .income : .outcome
+            let amount = Decimal(string: transaction.amount) ?? 0
+            return amount > 0 ? .income : .outcome
         }
         if case let .create(direction) = mode {
             return direction
@@ -74,9 +77,9 @@ class TransactionEditViewModel: ObservableObject {
     
     init(
         mode: Mode,
-        transactionsService: TransactionsService,
-        categoriesService: CategoriesService,
-        bankAccountsService: BankAccountsService,
+        transactionsService: TransactionsService = TransactionsService(),
+        categoriesService: CategoriesService = CategoriesService(),
+        bankAccountsService: BankAccountsService = BankAccountsService(),
         transactionsViewModel: TransactionsViewModel
     )
     {
@@ -87,28 +90,36 @@ class TransactionEditViewModel: ObservableObject {
         self.transactionsViewModel = transactionsViewModel
         
         if case let .edit(transaction) = mode {
-            self.date = transaction.transactionDate
-            self.time = transaction.transactionDate
+            if let date = ISO8601DateFormatter().date(from: transaction.transactionDate) {
+                self.date = date
+                self.time = date
+            }
             self.comment = transaction.comment ?? ""
         }
     }
     
     func loadData() {
+        isLoading = true
+        error = nil
         Task {
             do {
-                availableCategories = try await categoriesService.categories(for: transactionDirection)
+                let isIncome = transactionDirection == .income
+                availableCategories = try await categoriesService.getCategories(isIncome: isIncome)
                 
                 if case let .edit(transaction) = mode {
-                    selectedCategory = availableCategories.first { $0.id == transaction.categoryId }
+                    selectedCategory = availableCategories.first { $0.id == transaction.category.id }
                     let formatter = NumberFormatter()
                     formatter.numberStyle = .decimal
                     formatter.minimumFractionDigits = 2
                     formatter.maximumFractionDigits = 2
-                    amountText = formatter.string(from: NSDecimalNumber(decimal: abs(transaction.amount))) ?? ""
+                    let amountDecimal = abs(Decimal(string: transaction.amount) ?? 0)
+                    amountText = formatter.string(from: NSDecimalNumber(decimal: amountDecimal)) ?? ""
                 }
             } catch {
+                self.error = error
                 print("Error loading data: \(error)")
             }
+            isLoading = false
         }
     }
     
@@ -130,41 +141,48 @@ class TransactionEditViewModel: ObservableObject {
             of: calendar.date(from: dateComponents) ?? date
         ) else { return }
         
+        isLoading = true
+        error = nil
+        defer { isLoading = false }
         do {
             switch mode {
             case .create:
-                let account = try await bankAccountsService.getPrimaryAccount(for: 1)
-                
-                // Обновляем локальное состояние
-                await transactionsViewModel?.createTransaction(
+                let accounts = try await bankAccountsService.getAllAccounts()
+                guard let account = accounts.first else {
+                    throw NSError(domain: "Нет доступных счетов", code: 0)
+                }
+                let formattedAmount = String(format: "%.2f", abs(NSDecimalNumber(decimal: finalAmount).doubleValue))
+                let request = TransactionRequest(
                     accountId: account.id,
-                    amount: finalAmount,
-                    transactionDate: transactionDate,
                     categoryId: category.id,
-                    comment: comment
+                    amount: formattedAmount,
+                    transactionDate: ISO8601DateFormatter().string(from: transactionDate),
+                    comment: comment.isEmpty ? nil : comment
                 )
-                
+                print("Создаём транзакцию:", request)
+                try await transactionsService.createTransaction(request)
+                await transactionsViewModel?.loadTransactions()
             case .edit(let transaction):
-                let updatedTransaction = Transaction(
-                    id: transaction.id,
-                    accountId: transaction.accountId,
+                let formattedAmount = String(format: "%.2f", abs(NSDecimalNumber(decimal: finalAmount).doubleValue))
+                let request = TransactionRequest(
+                    accountId: transaction.account.id,
                     categoryId: category.id,
-                    amount: finalAmount,
-                    transactionDate: transactionDate,
-                    comment: comment.isEmpty ? nil : comment,
-                    createdAt: transaction.createdAt,
-                    updatedAt: Date()
+                    amount: formattedAmount,
+                    transactionDate: ISO8601DateFormatter().string(from: transactionDate),
+                    comment: comment.isEmpty ? nil : comment
                 )
-                try await transactionsService.updateTransaction(updatedTransaction)
-                await transactionsViewModel?.updateTransaction(updatedTransaction)
+                print("Обновляем транзакцию:", request)
+                try await transactionsService.updateTransaction(id: transaction.id, request: request)
+                await transactionsViewModel?.updateTransaction(transaction)
             }
         } catch {
+            self.error = error
             print("Error saving transaction: \(error)")
         }
         saveSuccess.toggle()
         if saveSuccess {
-                onSave?()
-            }
+            onSave?()
+        }
     }
     
     private func validateFields() -> Bool {
@@ -192,29 +210,20 @@ class TransactionEditViewModel: ObservableObject {
     func delete() async {
         guard case let .edit(transaction) = mode else { return }
         
+        isLoading = true
+        error = nil
         await transactionsViewModel?.deleteTransaction(withId: transaction.id)
         
         do {
-            try await transactionsService.deleteTransaction(withId: transaction.id)
-            
+            try await transactionsService.deleteTransaction(id: transaction.id)
             Task {
                 await transactionsViewModel?.loadTransactions()
             }
         } catch {
+            self.error = error
             print("Error deleting transaction: \(error)")
-            
-            await transactionsViewModel?.createTransaction(
-                accountId: transaction.accountId,
-                amount: transaction.amount,
-                transactionDate: transaction.transactionDate,
-                categoryId: transaction.categoryId,
-                comment: transaction.comment
-            )
-            
-            DispatchQueue.main.async {
-                print("Не удалось удалить транзакцию: \(error.localizedDescription)")
-            }
         }
+        isLoading = false
     }
     
     var maxAllowedTime: Date {
