@@ -4,12 +4,32 @@ import SwiftUI
 class ScoreViewModel: ObservableObject {
     private let accountsService = BankAccountsService()
     private let currencyService = CurrencyService()
+    private let transactionsService = TransactionsService()
     
     @Published var balance: Decimal = 0
     @Published var balanceString: String = ""
     @Published var originalBalance: Decimal = 0
     @Published var isInitialLoad = true
     @Published var errorMessage: String?
+    @Published var isLoading: Bool = false
+    @Published var transactions: [TransactionResponse] = []
+    private let lastManualBalanceUpdateKey = "lastManualBalanceUpdateKey"
+    private(set) var lastManualBalanceUpdate: Date? {
+        get {
+            if let dateString = UserDefaults.standard.string(forKey: lastManualBalanceUpdateKey) {
+                return ISO8601DateFormatter().date(from: dateString)
+            }
+            return nil
+        }
+        set {
+            if let date = newValue {
+                let dateString = ISO8601DateFormatter().string(from: date)
+                UserDefaults.standard.set(dateString, forKey: lastManualBalanceUpdateKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: lastManualBalanceUpdateKey)
+            }
+        }
+    }
     
     var currency: Currency {
         get { currencyService.currentCurrency }
@@ -25,27 +45,39 @@ class ScoreViewModel: ObservableObject {
     }
     
     func loadAccount() {
+        isLoading = true
         Task {
+            defer { isLoading = false }
             do {
                 let accounts = try await accountsService.getAllAccounts()
                 guard let account = accounts.first else { return }
-                
-                if let decimalBalance = Decimal(string: account.balance) {
-                    balance = decimalBalance
-                    originalBalance = decimalBalance
-                } else {
-                    balance = 0
-                    originalBalance = 0
+                let accountId = account.id
+                let allTransactions = try await transactionsService.getTransactions(accountId: accountId)
+                self.transactions = allTransactions
+                var computedBalance = Decimal(string: account.balance) ?? 0
+                if let lastManual = lastManualBalanceUpdate {
+                    let newTransactions = allTransactions.filter { transaction in
+                        let createdAt = ISO8601DateFormatter().date(from: transaction.createdAt) ?? Date.distantPast
+                        return createdAt > lastManual
+                    }
+                    let delta = newTransactions.reduce(Decimal(0)) { result, transaction in
+                        let amount = Decimal(string: transaction.amount) ?? 0
+                        if transaction.category.direction == .income {
+                            return result + amount
+                        } else {
+                            return result - amount
+                        }
+                    }
+                    computedBalance += delta
                 }
-                
-                // Загружаем валюту из аккаунта только при первой загрузке
+                self.balance = computedBalance
+                self.originalBalance = computedBalance
                 if isInitialLoad {
                     if let currencyEnum = Currency(rawValue: account.currency) {
                         currency = currencyEnum
                     }
                     isInitialLoad = false
                 }
-                
                 updateBalanceString()
             } catch {
                 errorMessage = error.localizedDescription
@@ -55,26 +87,20 @@ class ScoreViewModel: ObservableObject {
     }
     
     func saveChanges(balanceString: String) {
-        let cleanedString = balanceString.replacingOccurrences(of: ",", with: ".")
-        
-        if let newBalance = Decimal(string: cleanedString) {
-            // Проверяем, изменилось ли значение
-            guard newBalance != originalBalance else {
-                print("Значение не изменилось, сохранение не требуется")
-                return
-            }
-            
-            balance = newBalance
-            Task {
-                let accounts = try await accountsService.getAllAccounts()
-                guard let account = accounts.first else { return }
-                let request = BankAccountsService.AccountUpdateRequest(
-                    name: account.name,
-                    balance: String(format: "%.2f", NSDecimalNumber(decimal: balance).doubleValue),
-                    currency: currency.rawValue
-                )
-                _ = try await accountsService.updateAccount(id: account.id, request: request)
-                originalBalance = balance // Обновляем исходное значение
+        isLoading = true
+        Task {
+            defer { isLoading = false }
+            let cleanedString = balanceString.replacingOccurrences(of: ",", with: ".")
+            if let newBalance = Decimal(string: cleanedString) {
+                guard newBalance != originalBalance else {
+                    print("Значение не изменилось, сохранение не требуется")
+                    return
+                }
+                // Здесь должен быть запрос на обновление баланса на сервере
+                // После успешного обновления:
+                self.lastManualBalanceUpdate = Date()
+                balance = newBalance
+                originalBalance = newBalance
                 updateBalanceString()
             }
         }
@@ -91,6 +117,13 @@ class ScoreViewModel: ObservableObject {
     }
     
     func refreshAccount() async {
-        await loadAccount()
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            await loadAccount()
+        } catch {
+            errorMessage = error.localizedDescription
+            print("Error refreshing account: \(error)")
+        }
     }
 }

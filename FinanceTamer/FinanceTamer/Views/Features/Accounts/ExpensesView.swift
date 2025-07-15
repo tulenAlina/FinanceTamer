@@ -16,6 +16,14 @@ struct ExpensesView: View {
                         transactionsViewModel.switchDirection(to: .outcome)
                     }
                 
+                if transactionsViewModel.isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle())
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color.black.opacity(0.1))
+                        .zIndex(1)
+                }
+                
                 VStack {
                     Spacer()
                     HStack {

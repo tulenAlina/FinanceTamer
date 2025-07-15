@@ -75,6 +75,13 @@ struct ScoreView: View {
             }
             .overlay(
                 Group {
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle())
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color.black.opacity(0.1))
+                            .zIndex(2)
+                    }
                     if showCurrencyPicker {
                         Color.black.opacity(0.2)
                             .edgesIgnoringSafeArea(.all)
