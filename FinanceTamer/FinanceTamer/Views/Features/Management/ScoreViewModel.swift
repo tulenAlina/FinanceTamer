@@ -96,12 +96,24 @@ class ScoreViewModel: ObservableObject {
                     print("Значение не изменилось, сохранение не требуется")
                     return
                 }
-                // Здесь должен быть запрос на обновление баланса на сервере
-                // После успешного обновления:
-                self.lastManualBalanceUpdate = Date()
-                balance = newBalance
-                originalBalance = newBalance
-                updateBalanceString()
+                do {
+                    let accounts = try await accountsService.getAllAccounts()
+                    guard let account = accounts.first else { return }
+                    let request = BankAccountsService.AccountUpdateRequest(
+                        name: account.name,
+                        balance: String(format: "%.2f", NSDecimalNumber(decimal: newBalance).doubleValue),
+                        currency: currency.rawValue
+                    )
+                    _ = try await accountsService.updateAccount(id: account.id, request: request)
+                    // После успешного обновления:
+                    self.lastManualBalanceUpdate = Date()
+                    balance = newBalance
+                    originalBalance = newBalance
+                    updateBalanceString()
+                } catch {
+                    errorMessage = error.localizedDescription
+                    print("Error saving changes: \(error)")
+                }
             }
         }
     }
