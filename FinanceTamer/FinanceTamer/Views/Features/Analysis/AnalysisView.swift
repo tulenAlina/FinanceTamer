@@ -3,12 +3,14 @@ import SwiftUI
 struct AnalysisView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var transactionsViewModel: TransactionsViewModel
+    @EnvironmentObject var currencyService: CurrencyService
     let selectedDirection: Direction
     
     var body: some View {
         AnalysisViewControllerWrapper(
             selectedDirection: selectedDirection,
-            transactionsViewModel: transactionsViewModel
+            transactionsViewModel: transactionsViewModel,
+            currencySymbol: currencyService.currentCurrency.symbol
         )
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -29,6 +31,7 @@ struct AnalysisView: View {
 struct AnalysisViewControllerWrapper: UIViewControllerRepresentable {
     let selectedDirection: Direction
     let transactionsViewModel: TransactionsViewModel
+    let currencySymbol: String
     
     func makeUIViewController(context: Context) -> AnalysisViewController {
         let transactionsService = TransactionsService()
@@ -39,14 +42,14 @@ struct AnalysisViewControllerWrapper: UIViewControllerRepresentable {
             selectedDirection: selectedDirection
         )
         let analysisVC = AnalysisViewController(viewModel: viewModel)
-        
         analysisVC.transactionsViewModel = transactionsViewModel
-        
+        analysisVC.currencySymbol = currencySymbol
         return analysisVC
     }
 
     func updateUIViewController(_ uiViewController: AnalysisViewController, context: Context) {
         uiViewController.transactionsViewModel = transactionsViewModel
+        uiViewController.currencySymbol = currencySymbol
     }
 }
 

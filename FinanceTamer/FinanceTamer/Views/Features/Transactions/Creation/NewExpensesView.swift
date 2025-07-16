@@ -6,7 +6,7 @@ struct NewExpensesView: View {
     @EnvironmentObject var transactionsViewModel: TransactionsViewModel
     private let transactionsService = TransactionsService()
     private let categoriesService = CategoriesService()
-    private let bankAccountsService = BankAccountsService.shared
+    private let bankAccountsService = BankAccountsService()
     
     var body: some View {
         TransactionEditView(
@@ -30,13 +30,12 @@ struct NewExpensesView: View {
             }
         }
         .onDisappear {
-            Task {
-                await transactionsViewModel.loadTransactions()
-            }
         }
     }
 }
 
 #Preview {
+    let currencyService = CurrencyService()
     NewExpensesView()
+        .environmentObject(currencyService)
 }

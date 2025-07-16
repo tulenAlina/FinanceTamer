@@ -109,9 +109,40 @@ struct TransactionEditView: View {
                 viewModel.onSave = { dismiss() }
             }
             .onDisappear {
-                Task {
-                    await transactionsViewModel.loadTransactions()
+                if viewModel.saveSuccess {
+                    Task {
+                        await transactionsViewModel.loadTransactions()
+                    }
                 }
+            }
+            .overlay(
+                Group {
+                    if viewModel.isLoading {
+                        Color.black.opacity(0.1).ignoresSafeArea()
+                        ProgressView()
+                    }
+                }
+            )
+            .alert("Ошибка", isPresented: Binding(
+                get: {
+                    if let error = viewModel.error {
+                        print("[ALERT BINDING] error type: \(type(of: error)), error: \(error)")
+                        if let networkError = error as? NetworkError {
+                            switch networkError {
+                            case .serverError(let code) where code == 404: return false
+                            case .decodingError: return false
+                            default: break
+                            }
+                        }
+                        return !(viewModel.isCancelledError(error))
+                    }
+                    return false
+                },
+                set: { newValue in if !newValue { viewModel.error = nil } }
+            )) {
+                Button("OK", role: .cancel) { viewModel.error = nil }
+            } message: {
+                Text(viewModel.error?.localizedDescription ?? "Неизвестная ошибка")
             }
         }
     }

@@ -4,7 +4,7 @@ import SwiftUI
 class TransactionEditViewModel: ObservableObject {
     enum Mode {
         case create(Direction)
-        case edit(Transaction)
+        case edit(TransactionResponse)
     }
     
     let mode: Mode
@@ -21,6 +21,8 @@ class TransactionEditViewModel: ObservableObject {
     @Published var saveSuccess = false
     @Published var showValidationAlert = false
     @Published var validationMessage = ""
+    @Published var isLoading = false
+    @Published var error: Error?
     
     var onSave: (() -> Void)?
     
@@ -62,7 +64,7 @@ class TransactionEditViewModel: ObservableObject {
     
     var transactionDirection: Direction {
         if case let .edit(transaction) = mode {
-            return transaction.amount > 0 ? .income : .outcome
+            return transaction.category.direction
         }
         if case let .create(direction) = mode {
             return direction
@@ -74,9 +76,9 @@ class TransactionEditViewModel: ObservableObject {
     
     init(
         mode: Mode,
-        transactionsService: TransactionsService,
-        categoriesService: CategoriesService,
-        bankAccountsService: BankAccountsService,
+        transactionsService: TransactionsService = TransactionsService(),
+        categoriesService: CategoriesService = CategoriesService(),
+        bankAccountsService: BankAccountsService = BankAccountsService(),
         transactionsViewModel: TransactionsViewModel
     )
     {
@@ -87,26 +89,63 @@ class TransactionEditViewModel: ObservableObject {
         self.transactionsViewModel = transactionsViewModel
         
         if case let .edit(transaction) = mode {
-            self.date = transaction.transactionDate
-            self.time = transaction.transactionDate
+            if let date = ISO8601DateFormatter().date(from: transaction.transactionDate) {
+                let now = Date()
+                if date > now {
+                    self.date = now
+                    self.time = now
+                } else {
+                    self.date = date
+                    self.time = date
+                }
+            }
             self.comment = transaction.comment ?? ""
         }
     }
     
+    func isCancelledError(_ error: Error) -> Bool {
+        if let urlError = error as? URLError, urlError.code == .cancelled {
+            return true
+        }
+        if let networkError = error as? NetworkError {
+            switch networkError {
+            case .networkError(let err):
+                return isCancelledError(err)
+            default:
+                return false
+            }
+        }
+        return false
+    }
+    
     func loadData() {
+        isLoading = true
+        error = nil
         Task {
+            defer { isLoading = false }
             do {
-                availableCategories = try await categoriesService.categories(for: transactionDirection)
-                
+                let isIncome = transactionDirection == .income
+                availableCategories = try await categoriesService.getCategories(isIncome: isIncome)
                 if case let .edit(transaction) = mode {
-                    selectedCategory = availableCategories.first { $0.id == transaction.categoryId }
+                    selectedCategory = availableCategories.first { $0.id == transaction.category.id }
                     let formatter = NumberFormatter()
                     formatter.numberStyle = .decimal
                     formatter.minimumFractionDigits = 2
                     formatter.maximumFractionDigits = 2
-                    amountText = formatter.string(from: NSDecimalNumber(decimal: abs(transaction.amount))) ?? ""
+                    let amountDecimal = abs(Decimal(string: transaction.amount) ?? 0)
+                    amountText = formatter.string(from: NSDecimalNumber(decimal: amountDecimal)) ?? ""
+                    // Сброс даты, если она в будущем
+                    let now = Date()
+                    if date > now {
+                        date = now
+                        time = now
+                    }
                 }
             } catch {
+                if isCancelledError(error) || Task.isCancelled {
+                    return
+                }
+                self.error = error
                 print("Error loading data: \(error)")
             }
         }
@@ -116,55 +155,76 @@ class TransactionEditViewModel: ObservableObject {
         guard validateFields() else { return }
         guard let category = selectedCategory,
               let amount = Decimal(string: amountText)?.rounded(2) else { return }
-        
         let finalAmount = category.direction == .outcome ? -amount : amount
-        
         let calendar = Calendar.current
         let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
         let timeComponents = calendar.dateComponents([.hour, .minute], from: time)
-        
-        guard let transactionDate = calendar.date(
+        guard var transactionDate = calendar.date(
             bySettingHour: timeComponents.hour ?? 0,
             minute: timeComponents.minute ?? 0,
             second: 0,
             of: calendar.date(from: dateComponents) ?? date
         ) else { return }
-        
+        // Жёсткая проверка: если дата в будущем, сбрасываем и self.date/self.time на сейчас
+        let now = Date()
+        if transactionDate > now {
+            transactionDate = now
+            self.date = now
+            self.time = now
+        }
+        isLoading = true
+        error = nil
+        var didSave = false
+        defer {
+            isLoading = false
+            if didSave { saveSuccess.toggle(); onSave?() }
+        }
         do {
             switch mode {
             case .create:
-                let account = try await bankAccountsService.getPrimaryAccount(for: 1)
-                
-                // Обновляем локальное состояние
-                await transactionsViewModel?.createTransaction(
+                let accounts = try await bankAccountsService.getAllAccounts()
+                guard let account = accounts.first else {
+                    throw NSError(domain: "Нет доступных счетов", code: 0)
+                }
+                let formattedAmount = String(format: "%.2f", abs(NSDecimalNumber(decimal: finalAmount).doubleValue))
+                let request = TransactionRequest(
                     accountId: account.id,
-                    amount: finalAmount,
-                    transactionDate: transactionDate,
                     categoryId: category.id,
-                    comment: comment
+                    amount: formattedAmount,
+                    transactionDate: ISO8601DateFormatter().string(from: transactionDate),
+                    comment: comment // всегда строка
                 )
-                
+                let encoder = JSONEncoder()
+                encoder.outputFormatting = .prettyPrinted
+                if let data = try? encoder.encode(request), let json = String(data: data, encoding: .utf8) {
+                    print("JSON для создания транзакции:\n", json)
+                }
+                print("Создаём транзакцию:", request)
+                try await transactionsService.createTransaction(request)
+                await transactionsViewModel?.loadTransactions()
+                didSave = true
             case .edit(let transaction):
-                let updatedTransaction = Transaction(
-                    id: transaction.id,
-                    accountId: transaction.accountId,
+                let formattedAmount = String(format: "%.2f", abs(NSDecimalNumber(decimal: finalAmount).doubleValue))
+                let request = TransactionRequest(
+                    accountId: transaction.account.id,
                     categoryId: category.id,
-                    amount: finalAmount,
-                    transactionDate: transactionDate,
-                    comment: comment.isEmpty ? nil : comment,
-                    createdAt: transaction.createdAt,
-                    updatedAt: Date()
+                    amount: formattedAmount,
+                    transactionDate: ISO8601DateFormatter().string(from: transactionDate),
+                    comment: comment // всегда строка
                 )
-                try await transactionsService.updateTransaction(updatedTransaction)
-                await transactionsViewModel?.updateTransaction(updatedTransaction)
+                print("Обновляем транзакцию:", request)
+                try await transactionsService.updateTransaction(id: transaction.id, request: request)
+                await transactionsViewModel?.updateTransaction(transaction)
+                didSave = true
             }
         } catch {
+            if isCancelledError(error) || Task.isCancelled {
+                return
+            }
+            print("[ERROR SET] TransactionEditViewModel error: \(error)\nCallstack:\n\(Thread.callStackSymbols.joined(separator: "\n"))")
+            self.error = error
             print("Error saving transaction: \(error)")
         }
-        saveSuccess.toggle()
-        if saveSuccess {
-                onSave?()
-            }
     }
     
     private func validateFields() -> Bool {
@@ -192,29 +252,11 @@ class TransactionEditViewModel: ObservableObject {
     func delete() async {
         guard case let .edit(transaction) = mode else { return }
         
+        isLoading = true
+        error = nil
         await transactionsViewModel?.deleteTransaction(withId: transaction.id)
-        
-        do {
-            try await transactionsService.deleteTransaction(withId: transaction.id)
-            
-            Task {
-                await transactionsViewModel?.loadTransactions()
-            }
-        } catch {
-            print("Error deleting transaction: \(error)")
-            
-            await transactionsViewModel?.createTransaction(
-                accountId: transaction.accountId,
-                amount: transaction.amount,
-                transactionDate: transaction.transactionDate,
-                categoryId: transaction.categoryId,
-                comment: transaction.comment
-            )
-            
-            DispatchQueue.main.async {
-                print("Не удалось удалить транзакцию: \(error.localizedDescription)")
-            }
-        }
+        // Удалён повторный вызов через transactionsService.deleteTransaction(id:)
+        isLoading = false
     }
     
     var maxAllowedTime: Date {

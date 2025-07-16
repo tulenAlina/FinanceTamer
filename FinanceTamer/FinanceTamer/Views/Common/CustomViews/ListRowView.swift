@@ -1,19 +1,13 @@
 import SwiftUI
 
 struct ListRowView: View {
+    @EnvironmentObject var currencyService: CurrencyService
     private var emoji: String?
     private var categoryName: String
     private var transactionComment: String?
     private var transactionAmount: String
     private var transactionDate: String?
     private var needChevron: Bool
-    private var currencySymbol: String {
-        switch CurrencyService.shared.currentCurrency {
-        case .rub: return "₽"
-        case .usd: return "$"
-        case .eur: return "€"
-        }
-    }
     
     init(
         emoji: String? = nil,
@@ -52,8 +46,12 @@ struct ListRowView: View {
             .padding(.vertical, 10)
             
             VStack(alignment: .trailing) {
-                Text(transactionAmount.replacingOccurrences(of: "₽", with: currencySymbol))
+                Text(transactionAmount)
+                    .foregroundColor(.primary)
                     .font(.system(size: 17, weight: .regular))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(minWidth: 80, alignment: .trailing)
                 if let transactionDate = transactionDate {
                     Text(transactionDate)
                         .font(.system(size: 17, weight: .regular))

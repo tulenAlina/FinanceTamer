@@ -8,6 +8,7 @@ enum TypeDate {
 struct MyHistoryView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var transactionsViewModel: TransactionsViewModel
+    @EnvironmentObject var currencyService: CurrencyService
     
     @State private var startDate: Date = {
         let calendar = Calendar.current
@@ -27,34 +28,42 @@ struct MyHistoryView: View {
     
     @State private var sortType: SortType = .dateAscending
     
-    var filteredTransactions: [Transaction] {
-        // Убеждаемся, что даты корректные
+    var filteredTransactions: [TransactionResponse] {
+        let isoFormatter = ISO8601DateFormatter()
         let validStartDate = startDate
         let validEndDate = endDate >= startDate ? endDate : startDate
-        
         let dateRange = validStartDate...validEndDate
         return transactionsViewModel.allTransactions.filter { transaction in
             guard let category = transactionsViewModel.category(for: transaction) else { return false }
-            return dateRange.contains(transaction.transactionDate) && 
-                   category.direction == transactionsViewModel.selectedDirection
+            guard let date = isoFormatter.date(from: transaction.transactionDate) else { return false }
+            return dateRange.contains(date) && category.direction == transactionsViewModel.selectedDirection
         }
     }
     
-    var sortedTransactions: [Transaction] {
+    var sortedTransactions: [TransactionResponse] {
+        let isoFormatter = ISO8601DateFormatter()
         switch sortType {
         case .dateAscending:
-            return filteredTransactions.sorted { $0.transactionDate < $1.transactionDate }
+            return filteredTransactions.sorted {
+                let d0 = isoFormatter.date(from: $0.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transactionDate) ?? Date.distantPast
+                return d0 < d1
+            }
         case .dateDescending:
-            return filteredTransactions.sorted { $0.transactionDate > $1.transactionDate }
+            return filteredTransactions.sorted {
+                let d0 = isoFormatter.date(from: $0.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transactionDate) ?? Date.distantPast
+                return d0 > d1
+            }
         case .amountAscending:
-            return filteredTransactions.sorted { abs($0.amount) < abs($1.amount) }
+            return filteredTransactions.sorted { (Decimal(string: $0.amount) ?? 0) < (Decimal(string: $1.amount) ?? 0) }
         case .amountDescending:
-            return filteredTransactions.sorted { abs($0.amount) > abs($1.amount) }
+            return filteredTransactions.sorted { (Decimal(string: $0.amount) ?? 0) > (Decimal(string: $1.amount) ?? 0) }
         }
     }
     
     var totalAmount: Decimal {
-        sortedTransactions.reduce(0) { $0 + $1.amount }
+        sortedTransactions.reduce(0) { $0 + (Decimal(string: $1.amount) ?? 0) }
     }
     
     var body: some View {
@@ -66,6 +75,22 @@ struct MyHistoryView: View {
         .toolbar { toolbarItems }
         .task {
             await transactionsViewModel.loadTransactions()
+        }
+        .overlay(
+            Group {
+                if transactionsViewModel.isLoading {
+                    Color.black.opacity(0.1).ignoresSafeArea()
+                    ProgressView()
+                }
+            }
+        )
+        .alert("Ошибка", isPresented: Binding(
+            get: { transactionsViewModel.error != nil },
+            set: { newValue in if !newValue { transactionsViewModel.error = nil } }
+        )) {
+            Button("OK", role: .cancel) { transactionsViewModel.error = nil }
+        } message: {
+            Text(transactionsViewModel.error?.localizedDescription ?? "Неизвестная ошибка")
         }
     }
     
@@ -90,10 +115,10 @@ struct MyHistoryView: View {
                         mode: .edit(transaction),
                         transactionsService: TransactionsService(),
                         categoriesService: CategoriesService(),
-                        bankAccountsService: BankAccountsService.shared,
+                        bankAccountsService: BankAccountsService(),
                         transactionsViewModel: transactionsViewModel
                     )
-                    .environmentObject(CurrencyService.shared)
+                    .environmentObject(CurrencyService())
                     .environmentObject(transactionsViewModel)
                     .onDisappear {
                         Task {
@@ -140,7 +165,7 @@ struct MyHistoryView: View {
     private var totalAmountRow: some View {
         ListRowView(
             categoryName: "Сумма",
-            transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: totalAmount)) ?? "0 $",
+            transactionAmount: NumberFormatter.currency(symbol: currencyService.currentCurrency.symbol).string(from: NSDecimalNumber(decimal: totalAmount)) ?? "0 " + currencyService.currentCurrency.symbol,
             needChevron: false
         )
     }
@@ -240,8 +265,9 @@ struct MyHistoryView: View {
 // MARK: - Transaction Row View
 
 struct TransactionRow: View {
-    let transaction: Transaction
+    let transaction: TransactionResponse
     @EnvironmentObject var transactionsViewModel: TransactionsViewModel
+    @EnvironmentObject var currencyService: CurrencyService
     
     var body: some View {
         let category = getCategory(for: transaction)
@@ -252,7 +278,7 @@ struct TransactionRow: View {
                 emoji: category.map { String($0.emoji) } ?? "❓",
                 categoryName: category?.name ?? "Не известно",
                 transactionComment: comment.isEmpty ? nil : comment,
-                transactionAmount: NumberFormatter.currency.string(from: NSDecimalNumber(decimal: transaction.amount)) ?? "",
+                transactionAmount: NumberFormatter.currency(symbol: currencyService.currentCurrency.symbol).string(from: NSDecimalNumber(decimal: Decimal(string: transaction.amount) ?? 0)) ?? "",
                 transactionDate: dateFormatted(date: transaction.transactionDate),
                 needChevron: false
             )
@@ -260,13 +286,15 @@ struct TransactionRow: View {
         .listRowInsets(EdgeInsets(top: 10, leading: 20, bottom: 10, trailing: 20))
     }
     
-    private func dateFormatted(date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        return formatter.string(from: date)
+    private func dateFormatted(date: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        guard let date = formatter.date(from: date) else { return "" }
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "HH:mm"
+        return dateFormatter.string(from: date)
     }
     
-    private func getCategory(for transaction: Transaction) -> Category? {
+    private func getCategory(for transaction: TransactionResponse) -> Category? {
         return transactionsViewModel.category(for: transaction)
     }
 }
@@ -291,10 +319,12 @@ extension Color {
 // MARK: - Preview
 
 #Preview {
+    let currencyService = CurrencyService()
     MyHistoryView()
         .environmentObject(TransactionsViewModel(
             transactionsService: TransactionsService(),
             categoriesService: CategoriesService(),
             selectedDirection: .outcome
         ))
+        .environmentObject(currencyService)
 }

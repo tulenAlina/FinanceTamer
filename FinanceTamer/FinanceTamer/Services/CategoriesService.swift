@@ -1,26 +1,34 @@
 import Foundation
 
-/// Сервис для работы с категориями
 final class CategoriesService {
-    var mockCategories: [Category] = [
-        Category(id: 1, name: "Зарплата", emoji: "💰", direction: .income),
-        Category(id: 2, name: "Подарок", emoji: "🎁", direction: .income),
-        Category(id: 3, name: "Продукты", emoji: "🛒", direction: .outcome),
-        Category(id: 4, name: "Кафе", emoji: "☕️", direction: .outcome),
-        Category(id: 5, name: "Транспорт", emoji: "🚕", direction: .outcome),
-        Category(id: 6, name: "Жильё", emoji: "🏠", direction: .outcome),
-        Category(id: 7, name: "Развлечения", emoji: "🎭", direction: .outcome)
-    ]
+    private let networkClient: NetworkClient
     
-    /// Получает все категории
-    func categories() async throws -> [Category] {
-        try await Task.sleep(nanoseconds: 500_000_000) // Имитация задержки
-        return mockCategories
+    init(networkClient: NetworkClient = NetworkClient(
+        baseURL: "https://shmr-finance.ru/api/v1",
+        token: "YQC5f2uw8MWMoiM2H9j96vne"
+    )) {
+        self.networkClient = networkClient
     }
     
-    /// Получает категории по направлению
-    func categories(for direction: Direction) async throws -> [Category] {
-        try await Task.sleep(nanoseconds: 500_000_000) // Имитация задержки
-        return mockCategories.filter { $0.direction == direction }
+    // Получить все категории
+    func getAllCategories() async throws -> [Category] {
+        try await networkClient.request(
+            endpoint: "categories",
+            method: "GET",
+            headers: nil,
+            body: Optional<String>.none,
+            queryParameters: nil
+        )
+    }
+    
+    // Получить категории по типу (доходы/расходы)
+    func getCategories(isIncome: Bool) async throws -> [Category] {
+        try await networkClient.request(
+            endpoint: "categories/type/\(isIncome)",
+            method: "GET",
+            headers: nil,
+            body: Optional<String>.none,
+            queryParameters: nil
+        )
     }
 }

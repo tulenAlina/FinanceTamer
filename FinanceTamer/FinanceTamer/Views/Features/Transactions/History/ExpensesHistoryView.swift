@@ -13,5 +13,7 @@ struct ExpensesHistoryView: View {
 }
 
 #Preview {
+    let currencyService = CurrencyService()
     ExpensesHistoryView()
+        .environmentObject(currencyService)
 }

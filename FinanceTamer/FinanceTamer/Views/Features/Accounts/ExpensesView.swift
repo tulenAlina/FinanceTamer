@@ -12,7 +12,7 @@ struct ExpensesView: View {
             ZStack {
                 TransactionsListView(title: "Расходы сегодня")
                     .environmentObject(transactionsViewModel)
-                    .onAppear {
+                    .task {
                         transactionsViewModel.switchDirection(to: .outcome)
                     }
                 

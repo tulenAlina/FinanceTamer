@@ -12,10 +12,10 @@ struct IncomeView: View {
             ZStack {
                 TransactionsListView(title: "Доходы сегодня")
                     .environmentObject(transactionsViewModel)
-                    .onAppear {
+                    .task {
                         transactionsViewModel.switchDirection(to: .income)
                     }
-                
+                                
                 VStack {
                     Spacer()
                     HStack {
@@ -55,11 +55,6 @@ struct IncomeView: View {
             NewIncomeView()
                 .environmentObject(currencyService)
                 .environmentObject(transactionsViewModel)
-                .onDisappear {
-                    Task {
-                        await transactionsViewModel.loadTransactions()
-                    }
-                }
         }
     }
 }

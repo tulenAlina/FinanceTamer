@@ -76,13 +76,13 @@ final class AnalysisCell: UITableViewCell {
         ])
     }
     
-    func configure(category: Category, amount: Decimal, percentage: Double) {
+    func configure(category: Category, amount: Decimal, percentage: Double, currencySymbol: String) {
         emojiLabel.text = String(category.emoji)
         categoryLabel.text = category.name
         
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencySymbol = CurrencyService.shared.currentCurrency.symbol
+        formatter.currencySymbol = currencySymbol
         formatter.maximumFractionDigits = 2
         formatter.minimumFractionDigits = 0
         

@@ -20,8 +20,8 @@ final class MyHistoryViewModel: ObservableObject {
         }
     }
     @Published var totalAmount: Decimal = 0
-    @Published var allTransactions: [Transaction] = []
-    @Published var displayedTransactions: [Transaction] = []
+    @Published var allTransactions: [TransactionResponse] = []
+    @Published var displayedTransactions: [TransactionResponse] = []
     @Published var categories: [Category] = []
     @Published var isLoading = false
     @Published var error: Error?
@@ -30,16 +30,25 @@ final class MyHistoryViewModel: ObservableObject {
     private let transactionsService: TransactionsService
     private let categoriesService: CategoriesService
     
-    var sortedTransactions: [Transaction] {
+    var sortedTransactions: [TransactionResponse] {
+        let isoFormatter = ISO8601DateFormatter()
         switch sortType {
         case .dateAscending:
-            return displayedTransactions.sorted { $0.transactionDate < $1.transactionDate }
+            return displayedTransactions.sorted {
+                let d0 = isoFormatter.date(from: $0.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transactionDate) ?? Date.distantPast
+                return d0 < d1
+            }
         case .dateDescending:
-            return displayedTransactions.sorted { $0.transactionDate > $1.transactionDate }
+            return displayedTransactions.sorted {
+                let d0 = isoFormatter.date(from: $0.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transactionDate) ?? Date.distantPast
+                return d0 > d1
+            }
         case .amountAscending:
-            return displayedTransactions.sorted { abs($0.amount) < abs($1.amount) }
+            return displayedTransactions.sorted { (Decimal(string: $0.amount) ?? 0) < (Decimal(string: $1.amount) ?? 0) }
         case .amountDescending:
-            return displayedTransactions.sorted { abs($0.amount) > abs($1.amount) }
+            return displayedTransactions.sorted { (Decimal(string: $0.amount) ?? 0) > (Decimal(string: $1.amount) ?? 0) }
         }
     }
     
@@ -49,34 +58,53 @@ final class MyHistoryViewModel: ObservableObject {
         self.selectedDirection = selectedDirection
     }
     
-    func loadData(from startDate: Date, to endDate: Date) async {
+    func isCancelledError(_ error: Error) -> Bool {
+        if let urlError = error as? URLError, urlError.code == .cancelled {
+            return true
+        }
+        if let networkError = error as? NetworkError {
+            switch networkError {
+            case .networkError(let err):
+                return isCancelledError(err)
+            default:
+                return false
+            }
+        }
+        return false
+    }
+    
+    func loadData(from startDate: Date, to endDate: Date, accountId: Int) async {
         isLoading = true
         defer { isLoading = false }
-        
         do {
-            let dateRange = startDate...endDate
-            async let transactionsTask = transactionsService.getTransactions(for: dateRange)
-            async let categoriesTask = categoriesService.categories()
-            
+            let dateFormatter = ISO8601DateFormatter()
+            dateFormatter.formatOptions = [.withFullDate]
+            let start = dateFormatter.string(from: startDate)
+            let end = dateFormatter.string(from: endDate)
+            async let transactionsTask = transactionsService.getTransactions(accountId: accountId, startDate: start, endDate: end)
+            async let categoriesTask = categoriesService.getAllCategories()
             let (transactions, categories) = await (try transactionsTask, try categoriesTask)
-            
             self.allTransactions = transactions
             self.categories = categories
             self.displayedTransactions = transactions
             filterTransactions()
             self.totalAmount = calculateTotalAmount()
         } catch {
+            if isCancelledError(error) || Task.isCancelled {
+                return
+            }
+            print("[ERROR SET] MyHistoryViewModel error: \(error)\nCallstack:\n\(Thread.callStackSymbols.joined(separator: "\n"))")
             self.error = error
             print("Ошибка загрузки:", error.localizedDescription)
         }
     }
     
-    func category(for transaction: Transaction) -> Category? {
-        categories.first { $0.id == transaction.categoryId }
+    func category(for transaction: TransactionResponse) -> Category? {
+        categories.first { $0.id == transaction.category.id }
     }
     
     private func calculateTotalAmount() -> Decimal {
-        displayedTransactions.reduce(0) { $0 + $1.amount }
+        displayedTransactions.reduce(0) { $0 + (Decimal(string: $1.amount) ?? 0) }
     }
     
     private func filterTransactions() {

@@ -48,3 +48,4 @@ struct Category: Identifiable, Codable, Hashable {
         try container.encode(direction == .income, forKey: .isIncome)
     }
 }
+

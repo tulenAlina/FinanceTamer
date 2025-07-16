@@ -3,22 +3,24 @@ import OSLog
 
 @MainActor
 final class TransactionsViewModel: ObservableObject {
-    @Published var displayedTransactions: [Transaction] = []
-    @Published var allTransactions: [Transaction] = []
+    @Published var displayedTransactions: [TransactionResponse] = []
+    @Published var allTransactions: [TransactionResponse] = []
     @Published var categories: [Category] = []
-    @Published var isLoading = false
+    @Published var isLoading = true
     @Published var error: Error?
     @Published var saveSuccess = false
     @Published var lastUpdateTime = Date()
-    @Published private var currency = CurrencyService.shared.currentCurrency
+    @Published private var currency = Currency.rub
     @Published var sortType: SortType = .dateDescending {
         didSet {
             sortTransactions()
         }
     }
     
+    private var isDeleting = false
+    
     var totalAmount: Decimal {
-        displayedTransactions.reduce(0) { $0 + $1.amount }
+        displayedTransactions.reduce(0) { $0 + (Decimal(string: $1.amount) ?? 0) }
     }
     
     var selectedDirection: Direction = .outcome {
@@ -29,15 +31,32 @@ final class TransactionsViewModel: ObservableObject {
     
     private let transactionsService: TransactionsService
     private let categoriesService: CategoriesService
+    private var loadTask: Task<Void, Never>?
+    
+    func isCancelledError(_ error: Error) -> Bool {
+        if let urlError = error as? URLError, urlError.code == .cancelled {
+            return true
+        }
+        if let networkError = error as? NetworkError {
+            switch networkError {
+            case .networkError(let err):
+                return isCancelledError(err)
+            default:
+                return false
+            }
+        }
+        return false
+    }
     
     var totalAmountToday: String {
         let todayInterval = Date.todayInterval()
+        let isoFormatter = ISO8601DateFormatter()
         let todayTransactions = displayedTransactions.filter { transaction in
-            transaction.transactionDate >= todayInterval.lowerBound &&
-            transaction.transactionDate <= todayInterval.upperBound
+            guard let date = isoFormatter.date(from: transaction.transactionDate) else { return false }
+            return date >= todayInterval.lowerBound && date <= todayInterval.upperBound
         }
-        let total = todayTransactions.reduce(0) { $0 + $1.amount }
-        return NumberFormatter.currency.string(from: NSDecimalNumber(decimal: total)) ?? "0 ₽"
+        let total = todayTransactions.reduce(0) { $0 + (Decimal(string: $1.amount) ?? 0) }
+        return NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: total)) ?? "0 ₽"
     }
     
     init(
@@ -48,36 +67,58 @@ final class TransactionsViewModel: ObservableObject {
         self.transactionsService = transactionsService
         self.categoriesService = categoriesService
         self.selectedDirection = selectedDirection
-        CurrencyService.shared.$currentCurrency
-            .assign(to: &$currency)
     }
     
     func loadTransactions() async {
-        guard !isLoading else { return }
-        isLoading = true
-        defer { isLoading = false }
-        
-        do {
-            let endDate = Date()
-            let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate)!
-            let transactions = try await transactionsService.getTransactions(for: startDate...endDate)
-            print("Загружено транзакций: \(transactions.count)")
-            
-            let categories = try await categoriesService.categories()
-            print("Загружено категорий: \(categories.count)")
-            
-            self.allTransactions = transactions
-            self.categories = categories
-            filterTransactions()
-            self.lastUpdateTime = Date()
-        } catch {
-            print("Ошибка загрузки: \(error)")
-            self.error = error
+        loadTask = Task { [weak self] in
+            guard let self = self else { print("self is nil"); return }
+            defer {
+                self.isLoading = false
+                print("Конец загрузки транзакций, isLoading = \(self.isLoading)")
+            }
+            print("loadTransactions: isLoading перед установкой = \(self.isLoading)")
+            if self.isLoading { print("isLoading already true"); return }
+            self.isLoading = true
+            print("Начало загрузки транзакций")
+            do {
+                let endDate = Date()
+                let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate)!
+                let accounts = try? await BankAccountsService().getAllAccounts()
+                try Task.checkCancellation()
+                let accountId = accounts?.first?.id ?? 1
+                let dateFormatter = ISO8601DateFormatter()
+                dateFormatter.formatOptions = [.withFullDate]
+                let start = dateFormatter.string(from: startDate)
+                let end = dateFormatter.string(from: endDate)
+                let transactions = try await self.transactionsService.getTransactions(accountId: accountId, startDate: start, endDate: end)
+                try Task.checkCancellation()
+                print("Загружено транзакций: \(transactions.count)")
+                let categories = try await self.categoriesService.getAllCategories()
+                try Task.checkCancellation()
+                print("Загружено категорий: \(categories.count)")
+                await MainActor.run {
+                    self.allTransactions = transactions
+                    self.categories = categories
+                    self.filterTransactions()
+                    self.lastUpdateTime = Date()
+                }
+            } catch {
+                print("Catch в loadTransactions, Task.isCancelled = \(Task.isCancelled)")
+                if self.isCancelledError(error) || Task.isCancelled {
+                    print("Загрузка отменена")
+                    return
+                }
+                print("Ошибка загрузки: \(error)")
+                await MainActor.run {
+                    print("[ERROR SET] TransactionsViewModel error: \(error)\nCallstack:\n\(Thread.callStackSymbols.joined(separator: "\n"))")
+                    self.error = error
+                }
+            }
         }
     }
     
-    func category(for transaction: Transaction) -> Category? {
-        return categories.first { $0.id == transaction.categoryId }
+    func category(for transaction: TransactionResponse) -> Category? {
+        return categories.first { $0.id == transaction.category.id }
     }
     
     func createTransaction(
@@ -87,91 +128,93 @@ final class TransactionsViewModel: ObservableObject {
         categoryId: Int,
         comment: String? = nil
     ) async {
-        let newTransaction = Transaction(
-            id: 0, 
+        let formatter = ISO8601DateFormatter()
+        let request = TransactionRequest(
             accountId: accountId,
             categoryId: categoryId,
-            amount: amount,
-            transactionDate: transactionDate,
-            comment: comment,
-            createdAt: Date(),
-            updatedAt: Date()
+            amount: amount.description,
+            transactionDate: formatter.string(from: transactionDate),
+            comment: comment
         )
-        
-        allTransactions.append(newTransaction)
-        filterTransactions()
-        
         do {
-            try await transactionsService.createTransaction(
-                accountId: accountId,
-                amount: amount,
-                transactionDate: transactionDate,
-                categoryId: categoryId,
-                comment: comment
-            )
+            try await transactionsService.createTransaction(request)
             await loadTransactions()
         } catch {
-            allTransactions.removeAll { $0.id == newTransaction.id }
-            filterTransactions()
             self.error = error
         }
     }
     
     func deleteTransaction(withId id: Int) async {
+        if isDeleting { print("[Удаление] Повторный вызов проигнорирован"); return }
+        isDeleting = true
+        defer { isDeleting = false }
         let transactionToDelete = allTransactions.first { $0.id == id }
         allTransactions.removeAll { $0.id == id }
         filterTransactions()
-        
         do {
-            try await transactionsService.deleteTransaction(withId: id)
+            try await transactionsService.deleteTransaction(id: id)
             await loadTransactions()
         } catch {
-            if let transaction = transactionToDelete {
-                allTransactions.append(transaction)
-                filterTransactions()
+            if let networkError = error as? NetworkError {
+                switch networkError {
+                case .serverError(let code) where code == 404:
+                    print("[Удаление] 404 Not Found: \(error) | Тип: \(type(of: error))")
+                    await loadTransactions()
+                    return // Не кладём ошибку в self.error
+                case .decodingError:
+                    print("[Удаление] DecodingError: \(error) | Тип: \(type(of: error))")
+                    await loadTransactions()
+                    return // Не кладём ошибку в self.error
+                default:
+                    break
+                }
             }
-            self.error = error
+            print("Ошибка удаления транзакции: \(error)")
+            await MainActor.run {
+                print("[ALERT DEBUG] error type: \(type(of: error)), error: \(error)")
+                self.error = error
+            }
         }
     }
     
     private func sortTransactions() {
+        let isoFormatter = ISO8601DateFormatter()
         switch sortType {
         case .dateAscending:
-            displayedTransactions.sort { $0.transactionDate < $1.transactionDate }
+            displayedTransactions.sort {
+                let d0 = isoFormatter.date(from: $0.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transactionDate) ?? Date.distantPast
+                return d0 < d1
+            }
         case .dateDescending:
-            displayedTransactions.sort { $0.transactionDate > $1.transactionDate }
+            displayedTransactions.sort {
+                let d0 = isoFormatter.date(from: $0.transactionDate) ?? Date.distantPast
+                let d1 = isoFormatter.date(from: $1.transactionDate) ?? Date.distantPast
+                return d0 > d1
+            }
         case .amountAscending:
-            displayedTransactions.sort { abs($0.amount) < abs($1.amount) }
+            displayedTransactions.sort { (Decimal(string: $0.amount) ?? 0) < (Decimal(string: $1.amount) ?? 0) }
         case .amountDescending:
-            displayedTransactions.sort { abs($0.amount) > abs($1.amount) }
+            displayedTransactions.sort { (Decimal(string: $0.amount) ?? 0) > (Decimal(string: $1.amount) ?? 0) }
         }
     }
     
     private func filterTransactions() {
         displayedTransactions = allTransactions.filter { transaction in
-            guard let category = category(for: transaction) else {return false }
+            guard let category = category(for: transaction) else { return false }
             return category.direction == selectedDirection
         }
         sortTransactions()
     }
     
-    func updateTransaction(_ transaction: Transaction) async {
-        if let index = displayedTransactions.firstIndex(where: { $0.id == transaction.id }) {
-            displayedTransactions[index] = transaction
-        }
-        do {
-            try await transactionsService.updateTransaction(transaction)
-            saveSuccess.toggle()
-            await loadTransactions()
-        } catch {
-            await loadTransactions()
-            self.error = error
-            os_log("Ошибка обновления транзакции: %@", log: .default, type: .error, error.localizedDescription)
-        }
+    func updateTransaction(_ transaction: TransactionResponse) async {
+        await loadTransactions()
     }
     
     func switchDirection(to direction: Direction) {
         selectedDirection = direction
+        // Отменяем только при смене фильтра/экрана
+        loadTask?.cancel()
         Task {
             await loadTransactions()
         }

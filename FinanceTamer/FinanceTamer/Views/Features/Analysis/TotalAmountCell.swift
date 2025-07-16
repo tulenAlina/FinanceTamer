@@ -39,18 +39,16 @@ final class TotalAmountCell: UITableViewCell {
             amountLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor)
         ])
         
-        // Обновляем стиль
         amountLabel.textColor = .black
     }
     
-    func configure(amount: Decimal) {
+    func configure(amount: Decimal, currencySymbol: String) {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
-        formatter.currencySymbol = CurrencyService.shared.currentCurrency.symbol
+        formatter.currencySymbol = currencySymbol
         formatter.maximumFractionDigits = 2
         formatter.minimumFractionDigits = 0
         formatter.decimalSeparator = ","
-        
         amountLabel.text = formatter.string(from: amount as NSDecimalNumber)
     }
 }
