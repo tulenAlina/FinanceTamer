@@ -77,8 +77,10 @@ final class TransactionsViewModel: ObservableObject {
                 print("Конец загрузки транзакций, isLoading = \(self.isLoading)")
             }
             print("loadTransactions: isLoading перед установкой = \(self.isLoading)")
-            if self.isLoading { print("isLoading already true"); return }
-            self.isLoading = true
+            // Устанавливаем isLoading только если он еще не установлен
+            if !self.isLoading {
+                self.isLoading = true
+            }
             print("Начало загрузки транзакций")
             do {
                 let endDate = Date()
@@ -215,6 +217,10 @@ final class TransactionsViewModel: ObservableObject {
         selectedDirection = direction
         // Отменяем только при смене фильтра/экрана
         loadTask?.cancel()
+        // Показываем индикатор загрузки при смене направления
+        isLoading = true
+        // Очищаем отображаемые транзакции для мгновенной обратной связи
+        displayedTransactions = []
         Task {
             await loadTransactions()
         }

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Модель банковского счета, соответствующая API
-struct BankAccount: Identifiable, Decodable {
+struct BankAccount: Identifiable, Codable {
     let id: Int
     let userId: Int?
     let name: String

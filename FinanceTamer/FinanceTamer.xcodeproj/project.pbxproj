@@ -35,6 +35,16 @@
 		8766178D2DFB971E008001B4 /* Transaction+CSV.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766178C2DFB971E008001B4 /* Transaction+CSV.swift */; };
 		876617982DFB9A00008001B4 /* FinanceTamerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 876617972DFB9A00008001B4 /* FinanceTamerTests.swift */; };
 		8766179F2DFB9A1B008001B4 /* TransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766179E2DFB9A1B008001B4 /* TransactionTests.swift */; };
+		87A90BD82E28586600533CC1 /* TransactionStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BD72E28585500533CC1 /* TransactionStorage.swift */; };
+		87A90BDB2E2858E400533CC1 /* SwiftDataTransactionStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BDA2E2858D400533CC1 /* SwiftDataTransactionStorage.swift */; };
+		87A90BDD2E28592B00533CC1 /* TransactionsBackupStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BDC2E28592A00533CC1 /* TransactionsBackupStorage.swift */; };
+		87A90BDF2E28596E00533CC1 /* SwiftDataTransactionsBackupStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BDE2E28596D00533CC1 /* SwiftDataTransactionsBackupStorage.swift */; };
+		87A90BE12E285A2100533CC1 /* BankAccountsStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BE02E285A1D00533CC1 /* BankAccountsStorage.swift */; };
+		87A90BE42E285A6900533CC1 /* SwiftDataBankAccountsStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BE32E285A6800533CC1 /* SwiftDataBankAccountsStorage.swift */; };
+		87A90BE62E285AD600533CC1 /* SwiftDataBankAccountsBackupStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BE52E285AC600533CC1 /* SwiftDataBankAccountsBackupStorage.swift */; };
+		87A90BE82E285AFE00533CC1 /* BankAccountsBackupStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BE72E285AFB00533CC1 /* BankAccountsBackupStorage.swift */; };
+		87A90BEA2E285C0C00533CC1 /* CategoriesStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BE92E285C0B00533CC1 /* CategoriesStorage.swift */; };
+		87A90BEC2E285C3600533CC1 /* SwiftDataCategoriesStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87A90BEB2E285C2A00533CC1 /* SwiftDataCategoriesStorage.swift */; };
 		87B750482E05B19B000C66F2 /* AppErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B750472E05B196000C66F2 /* AppErrors.swift */; };
 		87B7504A2E05B1A4000C66F2 /* ParsingErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B750492E05B1A2000C66F2 /* ParsingErrors.swift */; };
 		87B7504E2E05D91A000C66F2 /* FileErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7504D2E05D902000C66F2 /* FileErrors.swift */; };
@@ -105,6 +115,16 @@
 		876617952DFB9A00008001B4 /* FinanceTamerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinanceTamerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		876617972DFB9A00008001B4 /* FinanceTamerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceTamerTests.swift; sourceTree = "<group>"; };
 		8766179E2DFB9A1B008001B4 /* TransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTests.swift; sourceTree = "<group>"; };
+		87A90BD72E28585500533CC1 /* TransactionStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionStorage.swift; sourceTree = "<group>"; };
+		87A90BDA2E2858D400533CC1 /* SwiftDataTransactionStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataTransactionStorage.swift; sourceTree = "<group>"; };
+		87A90BDC2E28592A00533CC1 /* TransactionsBackupStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionsBackupStorage.swift; sourceTree = "<group>"; };
+		87A90BDE2E28596D00533CC1 /* SwiftDataTransactionsBackupStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataTransactionsBackupStorage.swift; sourceTree = "<group>"; };
+		87A90BE02E285A1D00533CC1 /* BankAccountsStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountsStorage.swift; sourceTree = "<group>"; };
+		87A90BE32E285A6800533CC1 /* SwiftDataBankAccountsStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataBankAccountsStorage.swift; sourceTree = "<group>"; };
+		87A90BE52E285AC600533CC1 /* SwiftDataBankAccountsBackupStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataBankAccountsBackupStorage.swift; sourceTree = "<group>"; };
+		87A90BE72E285AFB00533CC1 /* BankAccountsBackupStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BankAccountsBackupStorage.swift; sourceTree = "<group>"; };
+		87A90BE92E285C0B00533CC1 /* CategoriesStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoriesStorage.swift; sourceTree = "<group>"; };
+		87A90BEB2E285C2A00533CC1 /* SwiftDataCategoriesStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwiftDataCategoriesStorage.swift; sourceTree = "<group>"; };
 		87B750472E05B196000C66F2 /* AppErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppErrors.swift; sourceTree = "<group>"; };
 		87B750492E05B1A2000C66F2 /* ParsingErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsingErrors.swift; sourceTree = "<group>"; };
 		87B7504D2E05D902000C66F2 /* FileErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileErrors.swift; sourceTree = "<group>"; };
@@ -215,6 +235,7 @@
 		876617772DFB1906008001B4 /* Services */ = {
 			isa = PBXGroup;
 			children = (
+				87A90BE22E285A2800533CC1 /* Storage */,
 				8726781F2E26C20D00186972 /* NetworkClient.swift */,
 				87B7525A2E0E0CCC000C66F2 /* CurrencyService.swift */,
 				876617842DFB7F05008001B4 /* TransactionsFileCache.swift */,
@@ -250,6 +271,23 @@
 				8766179E2DFB9A1B008001B4 /* TransactionTests.swift */,
 			);
 			path = FinanceTamerTests;
+			sourceTree = "<group>";
+		};
+		87A90BE22E285A2800533CC1 /* Storage */ = {
+			isa = PBXGroup;
+			children = (
+				87A90BEB2E285C2A00533CC1 /* SwiftDataCategoriesStorage.swift */,
+				87A90BE92E285C0B00533CC1 /* CategoriesStorage.swift */,
+				87A90BE72E285AFB00533CC1 /* BankAccountsBackupStorage.swift */,
+				87A90BE52E285AC600533CC1 /* SwiftDataBankAccountsBackupStorage.swift */,
+				87A90BE32E285A6800533CC1 /* SwiftDataBankAccountsStorage.swift */,
+				87A90BE02E285A1D00533CC1 /* BankAccountsStorage.swift */,
+				87A90BDE2E28596D00533CC1 /* SwiftDataTransactionsBackupStorage.swift */,
+				87A90BDC2E28592A00533CC1 /* TransactionsBackupStorage.swift */,
+				87A90BDA2E2858D400533CC1 /* SwiftDataTransactionStorage.swift */,
+				87A90BD72E28585500533CC1 /* TransactionStorage.swift */,
+			);
+			path = Storage;
 			sourceTree = "<group>";
 		};
 		87B750462E05B178000C66F2 /* Errors */ = {
@@ -503,7 +541,9 @@
 				87B751A32E06454D000C66F2 /* TabBarView.swift in Sources */,
 				876617832DFB7B1B008001B4 /* Transaction+JSON.swift in Sources */,
 				87B7519F2E06454D000C66F2 /* ScoreView.swift in Sources */,
+				87A90BE12E285A2100533CC1 /* BankAccountsStorage.swift in Sources */,
 				87B752552E0AD3F8000C66F2 /* ScoreViewModel.swift in Sources */,
+				87A90BEA2E285C0C00533CC1 /* CategoriesStorage.swift in Sources */,
 				87B7504A2E05B1A4000C66F2 /* ParsingErrors.swift in Sources */,
 				87B750482E05B19B000C66F2 /* AppErrors.swift in Sources */,
 				872676CE2E14607800186972 /* FuzzySearch.swift in Sources */,
@@ -512,25 +552,30 @@
 				87B750502E060BF5000C66F2 /* Currency.swift in Sources */,
 				876617692DFB0C2A008001B4 /* FinanceTamerApp.swift in Sources */,
 				876617892DFB8DB7008001B4 /* BankAccountsService.swift in Sources */,
+				87A90BDD2E28592B00533CC1 /* TransactionsBackupStorage.swift in Sources */,
 				876617852DFB7F05008001B4 /* TransactionsFileCache.swift in Sources */,
 				87B752572E0D5257000C66F2 /* CurrencyPickerView.swift in Sources */,
 				87B7504E2E05D91A000C66F2 /* FileErrors.swift in Sources */,
 				872677012E1D6B5500186972 /* AnalysisViewController.swift in Sources */,
 				872678202E26C21600186972 /* NetworkClient.swift in Sources */,
+				87A90BDF2E28596E00533CC1 /* SwiftDataTransactionsBackupStorage.swift in Sources */,
 				8726776C2E208B6C00186972 /* CategoryPickerView.swift in Sources */,
 				87B7518C2E06454D000C66F2 /* ExpensesView.swift in Sources */,
 				87B7518D2E06454D000C66F2 /* ExpensesHistoryView.swift in Sources */,
+				87A90BE42E285A6900533CC1 /* SwiftDataBankAccountsStorage.swift in Sources */,
 				87B7532B2E0ED731000C66F2 /* SpoilerText.swift in Sources */,
 				8726776A2E208B0D00186972 /* TransactionEditView.swift in Sources */,
 				87B7518E2E06454D000C66F2 /* NewExpensesView.swift in Sources */,
 				8766178D2DFB971E008001B4 /* Transaction+CSV.swift in Sources */,
 				87B751A62E06454D000C66F2 /* TransactionsListView.swift in Sources */,
 				87B751A72E06454D000C66F2 /* TransactionsViewModel.swift in Sources */,
+				87A90BDB2E2858E400533CC1 /* SwiftDataTransactionStorage.swift in Sources */,
 				876617812DFB529B008001B4 /* Transaction.swift in Sources */,
 				8766177B2DFB199D008001B4 /* Direction.swift in Sources */,
 				8766177D2DFB19C2008001B4 /* Category.swift in Sources */,
 				872678222E26C4B600186972 /* EmptyResponse.swift in Sources */,
 				872677092E1D6BBE00186972 /* AnalysisCell.swift in Sources */,
+				87A90BEC2E285C3600533CC1 /* SwiftDataCategoriesStorage.swift in Sources */,
 				87B751832E06454D000C66F2 /* CategoriesView.swift in Sources */,
 				8726776E2E208BE600186972 /* TransactionEditViewModel.swift in Sources */,
 				8766177F2DFB4798008001B4 /* BankAccount.swift in Sources */,
@@ -547,8 +592,11 @@
 				87B751982E06454D000C66F2 /* IncomeHistoryView.swift in Sources */,
 				872676CA2E1440D400186972 /* CategoriesViewModel.swift in Sources */,
 				87B751992E06454D000C66F2 /* IncomeView.swift in Sources */,
+				87A90BE82E285AFE00533CC1 /* BankAccountsBackupStorage.swift in Sources */,
 				8766178B2DFB917F008001B4 /* TransactionsService.swift in Sources */,
+				87A90BD82E28586600533CC1 /* TransactionStorage.swift in Sources */,
 				87B751812E06454D000C66F2 /* AnalysisView.swift in Sources */,
+				87A90BE62E285AD600533CC1 /* SwiftDataBankAccountsBackupStorage.swift in Sources */,
 				87B7532D2E0ED831000C66F2 /* ShakeDetector.swift in Sources */,
 				876617872DFB8231008001B4 /* CategoriesService.swift in Sources */,
 			);

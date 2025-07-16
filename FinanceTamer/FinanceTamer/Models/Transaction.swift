@@ -1,7 +1,7 @@
 import Foundation
 
 // MARK: - AccountBrief для TransactionResponse
-struct AccountBrief: Decodable, Equatable {
+struct AccountBrief: Codable, Equatable {
     let id: Int
     let name: String
     let balance: String
@@ -18,7 +18,7 @@ struct TransactionRequest: Encodable {
 }
 
 // MARK: - TransactionResponse (ответ API)
-struct TransactionResponse: Decodable, Identifiable, Equatable {
+struct TransactionResponse: Codable, Identifiable, Equatable {
     let id: Int
     let account: AccountBrief
     let category: Category

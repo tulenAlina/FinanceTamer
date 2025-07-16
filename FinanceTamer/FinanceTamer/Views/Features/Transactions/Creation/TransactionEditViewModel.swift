@@ -1,7 +1,7 @@
 import SwiftUI
 
 @MainActor
-class TransactionEditViewModel: ObservableObject {
+final class TransactionEditViewModel: ObservableObject {
     enum Mode {
         case create(Direction)
         case edit(TransactionResponse)
@@ -76,9 +76,9 @@ class TransactionEditViewModel: ObservableObject {
     
     init(
         mode: Mode,
-        transactionsService: TransactionsService = TransactionsService(),
-        categoriesService: CategoriesService = CategoriesService(),
-        bankAccountsService: BankAccountsService = BankAccountsService(),
+        transactionsService: TransactionsService,
+        categoriesService: CategoriesService,
+        bankAccountsService: BankAccountsService,
         transactionsViewModel: TransactionsViewModel
     )
     {
