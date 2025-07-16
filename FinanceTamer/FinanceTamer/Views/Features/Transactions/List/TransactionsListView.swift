@@ -62,7 +62,7 @@ struct TransactionsListView: View {
                     // Автоматическое обновление при изменении транзакций
                 }
                 .alert("Ошибка", isPresented: Binding(
-                    get: { viewModel.error != nil },
+                    get: { viewModel.error != nil && !(viewModel.error.map { viewModel.isCancelledError($0) } ?? false) },
                     set: { newValue in if !newValue { viewModel.error = nil } }
                 )) {
                     Button("OK", role: .cancel) { viewModel.error = nil }
@@ -70,6 +70,14 @@ struct TransactionsListView: View {
                     Text(viewModel.error?.localizedDescription ?? "Неизвестная ошибка")
                 }
             }
+            .overlay(
+                Group {
+                    if viewModel.isLoading {
+                        Color.black.opacity(0.1).ignoresSafeArea()
+                        ProgressView()
+                    }
+                }
+            )
         }
     }
 }
@@ -99,16 +107,12 @@ struct TransactionRowNavigationView: View {
             )
             .environmentObject(CurrencyService())
             .environmentObject(viewModel)
-            .onDisappear {
-                Task {
-                    await viewModel.loadTransactions()
-                }
-            }
+            // .onDisappear удалён, чтобы не было лишних вызовов загрузки
         } label: {
             VStack(spacing: 0) {
                 ListRowView(
                     emoji: category.map { String($0.emoji) } ?? "❓",
-                    categoryName: category?.name ?? "Не известно",
+                    categoryName: category?.name ?? "Неизвестно",
                     transactionComment: transaction.comment?.isEmpty == false ? transaction.comment : nil,
                     transactionAmount: NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: Decimal(string: transaction.amount) ?? 0)) ?? "",
                     needChevron: false

@@ -103,7 +103,15 @@ struct ScoreView: View {
                     isBalanceHidden.toggle()
                 }
             }
-            .errorAlert(error: errorBinding)
+            .errorAlert(error: Binding(
+                get: {
+                    if let error = viewModel.errorMessage, !viewModel.isCancelledError(NSError(domain: error, code: 0)) {
+                        return error
+                    }
+                    return nil
+                },
+                set: { viewModel.errorMessage = $0 }
+            ))
         }
     }
     

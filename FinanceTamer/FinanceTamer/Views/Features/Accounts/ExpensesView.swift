@@ -12,17 +12,11 @@ struct ExpensesView: View {
             ZStack {
                 TransactionsListView(title: "Расходы сегодня")
                     .environmentObject(transactionsViewModel)
-                    .onAppear {
+                    .task {
                         transactionsViewModel.switchDirection(to: .outcome)
                     }
                 
-                if transactionsViewModel.isLoading {
-                    ProgressView()
-                        .progressViewStyle(CircularProgressViewStyle())
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .background(Color.black.opacity(0.1))
-                        .zIndex(1)
-                }
+                // Удалён дублирующийся индикатор загрузки
                 
                 VStack {
                     Spacer()

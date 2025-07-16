@@ -31,7 +31,7 @@ final class TransactionsViewModel: ObservableObject {
     private let categoriesService: CategoriesService
     private var loadTask: Task<Void, Never>?
     
-    private func isCancelledError(_ error: Error) -> Bool {
+    func isCancelledError(_ error: Error) -> Bool {
         if let urlError = error as? URLError, urlError.code == .cancelled {
             return true
         }
@@ -68,16 +68,16 @@ final class TransactionsViewModel: ObservableObject {
     }
     
     func loadTransactions() async {
-        // Не отменяем задачу при каждом вызове, только при смене фильтра/экрана
         loadTask = Task { [weak self] in
-            guard let self = self else { return }
-            if self.isLoading { return }
-            self.isLoading = true
-            print("Начало загрузки транзакций")
+            guard let self = self else { print("self is nil"); return }
             defer {
                 self.isLoading = false
-                print("Конец загрузки транзакций")
+                print("Конец загрузки транзакций, isLoading = \(self.isLoading)")
             }
+            print("loadTransactions: isLoading перед установкой = \(self.isLoading)")
+            if self.isLoading { print("isLoading already true"); return }
+            self.isLoading = true
+            print("Начало загрузки транзакций")
             do {
                 let endDate = Date()
                 let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate)!
@@ -101,6 +101,7 @@ final class TransactionsViewModel: ObservableObject {
                     self.lastUpdateTime = Date()
                 }
             } catch {
+                print("Catch в loadTransactions, Task.isCancelled = \(Task.isCancelled)")
                 if self.isCancelledError(error) || Task.isCancelled {
                     print("Загрузка отменена")
                     return
@@ -196,22 +197,7 @@ final class TransactionsViewModel: ObservableObject {
     }
     
     func updateTransaction(_ transaction: TransactionResponse) async {
-        let request = TransactionRequest(
-            accountId: transaction.account.id,
-            categoryId: transaction.category.id,
-            amount: transaction.amount,
-            transactionDate: transaction.transactionDate,
-            comment: transaction.comment
-        )
-        do {
-            try await transactionsService.updateTransaction(id: transaction.id, request: request)
-            saveSuccess.toggle()
-            await loadTransactions()
-        } catch {
-            await loadTransactions()
-            self.error = error
-            os_log("Ошибка обновления транзакции: %@", log: .default, type: .error, error.localizedDescription)
-        }
+        await loadTransactions()
     }
     
     func switchDirection(to direction: Direction) {

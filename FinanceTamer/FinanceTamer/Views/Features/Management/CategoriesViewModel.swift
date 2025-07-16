@@ -7,6 +7,21 @@ final class CategoriesViewModel: ObservableObject {
     @Published var error: Error?
     private let categoriesService = CategoriesService()
     
+    func isCancelledError(_ error: Error) -> Bool {
+        if let urlError = error as? URLError, urlError.code == .cancelled {
+            return true
+        }
+        if let networkError = error as? NetworkError {
+            switch networkError {
+            case .networkError(let err):
+                return isCancelledError(err)
+            default:
+                return false
+            }
+        }
+        return false
+    }
+    
     func loadCategories(for direction: Direction? = nil) async {
         isLoading = true
         error = nil
@@ -19,6 +34,9 @@ final class CategoriesViewModel: ObservableObject {
                 categories = try await categoriesService.getAllCategories()
             }
         } catch {
+            if isCancelledError(error) || Task.isCancelled {
+                return
+            }
             self.error = error
             print("Ошибка загрузки категорий: \(error)")
         }

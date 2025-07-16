@@ -109,8 +109,10 @@ struct TransactionEditView: View {
                 viewModel.onSave = { dismiss() }
             }
             .onDisappear {
-                Task {
-                    await transactionsViewModel.loadTransactions()
+                if viewModel.saveSuccess {
+                    Task {
+                        await transactionsViewModel.loadTransactions()
+                    }
                 }
             }
             .overlay(
@@ -122,7 +124,7 @@ struct TransactionEditView: View {
                 }
             )
             .alert("Ошибка", isPresented: Binding(
-                get: { viewModel.error != nil },
+                get: { viewModel.error != nil && !(viewModel.error.map { viewModel.isCancelledError($0) } ?? false) },
                 set: { newValue in if !newValue { viewModel.error = nil } }
             )) {
                 Button("OK", role: .cancel) { viewModel.error = nil }

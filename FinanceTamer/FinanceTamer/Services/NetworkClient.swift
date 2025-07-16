@@ -88,18 +88,34 @@ final class NetworkClient {
                 }
                 request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             } catch {
+                print("[NetworkClient] Ошибка кодирования тела запроса для endpoint: \(endpoint):", error)
                 throw NetworkError.encodingError(error)
+            }
+        }
+        // Логируем запрос
+        print("[NetworkClient] Запрос: \(method) \(url.absoluteString)")
+        if let body = body {
+            if let data = try? JSONEncoder().encode(body),
+               let json = String(data: data, encoding: .utf8) {
+                print("[NetworkClient] Тело запроса: \n\(json)")
             }
         }
         do {
             let (data, response) = try await urlSession.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
+                print("[NetworkClient] Некорректный ответ от сервера для endpoint: \(endpoint)")
                 throw NetworkError.invalidResponse
+            }
+            print("[NetworkClient] Статус ответа: \(httpResponse.statusCode) для endpoint: \(endpoint)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("[NetworkClient] Тело ответа: \n\(responseString)")
             }
             if !(200...299).contains(httpResponse.statusCode) {
                 if httpResponse.statusCode == 401 {
+                    print("[NetworkClient] Неавторизованный доступ для endpoint: \(endpoint)")
                     throw NetworkError.unauthorized
                 }
+                print("[NetworkClient] Ошибка сервера (\(httpResponse.statusCode)) для endpoint: \(endpoint)")
                 throw NetworkError.serverError(statusCode: httpResponse.statusCode)
             }
             do {
@@ -109,14 +125,17 @@ final class NetworkClient {
                             let decoded = try JSONDecoder().decode(Response.self, from: data)
                             cont.resume(returning: decoded)
                         } catch {
+                            print("[NetworkClient] Ошибка декодирования ответа для endpoint: \(endpoint):", error)
                             cont.resume(throwing: NetworkError.decodingError(error))
                         }
                     }
                 }
             } catch {
+                print("[NetworkClient] Ошибка декодирования (catch) для endpoint: \(endpoint):", error)
                 throw NetworkError.decodingError(error)
             }
         } catch {
+            print("[NetworkClient] Сетевая ошибка для endpoint: \(endpoint):", error)
             throw NetworkError.networkError(error)
         }
     }

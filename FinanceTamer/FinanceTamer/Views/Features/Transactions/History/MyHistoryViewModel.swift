@@ -58,6 +58,21 @@ final class MyHistoryViewModel: ObservableObject {
         self.selectedDirection = selectedDirection
     }
     
+    func isCancelledError(_ error: Error) -> Bool {
+        if let urlError = error as? URLError, urlError.code == .cancelled {
+            return true
+        }
+        if let networkError = error as? NetworkError {
+            switch networkError {
+            case .networkError(let err):
+                return isCancelledError(err)
+            default:
+                return false
+            }
+        }
+        return false
+    }
+    
     func loadData(from startDate: Date, to endDate: Date, accountId: Int) async {
         isLoading = true
         defer { isLoading = false }
@@ -75,6 +90,9 @@ final class MyHistoryViewModel: ObservableObject {
             filterTransactions()
             self.totalAmount = calculateTotalAmount()
         } catch {
+            if isCancelledError(error) || Task.isCancelled {
+                return
+            }
             self.error = error
             print("Ошибка загрузки:", error.localizedDescription)
         }

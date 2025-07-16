@@ -49,7 +49,7 @@ struct CategoriesView: View {
                     }
                 }
             )
-            .alert("Ошибка", isPresented: Binding(get: { viewModel.error != nil }, set: { _ in viewModel.error = nil })) {
+            .alert("Ошибка", isPresented: Binding(get: { viewModel.error != nil && !(viewModel.error.map { viewModel.isCancelledError($0) } ?? false) }, set: { _ in viewModel.error = nil })) {
                 Button("OK", role: .cancel) { viewModel.error = nil }
             } message: {
                 Text(viewModel.error?.localizedDescription ?? "Неизвестная ошибка")

@@ -44,6 +44,21 @@ class ScoreViewModel: ObservableObject {
         }
     }
     
+    func isCancelledError(_ error: Error) -> Bool {
+        if let urlError = error as? URLError, urlError.code == .cancelled {
+            return true
+        }
+        if let networkError = error as? NetworkError {
+            switch networkError {
+            case .networkError(let err):
+                return isCancelledError(err)
+            default:
+                return false
+            }
+        }
+        return false
+    }
+    
     func loadAccount() {
         isLoading = true
         Task {
@@ -80,6 +95,9 @@ class ScoreViewModel: ObservableObject {
                 }
                 updateBalanceString()
             } catch {
+                if isCancelledError(error) || Task.isCancelled {
+                    return
+                }
                 errorMessage = error.localizedDescription
                 print("Error loading account: \(error)")
             }
@@ -111,6 +129,9 @@ class ScoreViewModel: ObservableObject {
                     originalBalance = newBalance
                     updateBalanceString()
                 } catch {
+                    if isCancelledError(error) || Task.isCancelled {
+                        return
+                    }
                     errorMessage = error.localizedDescription
                     print("Error saving changes: \(error)")
                 }
@@ -134,6 +155,9 @@ class ScoreViewModel: ObservableObject {
         do {
             await loadAccount()
         } catch {
+            if isCancelledError(error) || Task.isCancelled {
+                return
+            }
             errorMessage = error.localizedDescription
             print("Error refreshing account: \(error)")
         }
