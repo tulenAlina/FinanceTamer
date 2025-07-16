@@ -15,9 +15,7 @@ struct IncomeView: View {
                     .task {
                         transactionsViewModel.switchDirection(to: .income)
                     }
-                
-                // Удалён дублирующийся индикатор загрузки
-                
+                                
                 VStack {
                     Spacer()
                     HStack {

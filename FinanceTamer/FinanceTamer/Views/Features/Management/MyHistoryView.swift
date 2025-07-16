@@ -8,6 +8,7 @@ enum TypeDate {
 struct MyHistoryView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject var transactionsViewModel: TransactionsViewModel
+    @EnvironmentObject var currencyService: CurrencyService
     
     @State private var startDate: Date = {
         let calendar = Calendar.current
@@ -164,7 +165,7 @@ struct MyHistoryView: View {
     private var totalAmountRow: some View {
         ListRowView(
             categoryName: "Сумма",
-            transactionAmount: NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: totalAmount)) ?? "0 ₽",
+            transactionAmount: NumberFormatter.currency(symbol: currencyService.currentCurrency.symbol).string(from: NSDecimalNumber(decimal: totalAmount)) ?? "0 " + currencyService.currentCurrency.symbol,
             needChevron: false
         )
     }
@@ -266,6 +267,7 @@ struct MyHistoryView: View {
 struct TransactionRow: View {
     let transaction: TransactionResponse
     @EnvironmentObject var transactionsViewModel: TransactionsViewModel
+    @EnvironmentObject var currencyService: CurrencyService
     
     var body: some View {
         let category = getCategory(for: transaction)
@@ -276,7 +278,7 @@ struct TransactionRow: View {
                 emoji: category.map { String($0.emoji) } ?? "❓",
                 categoryName: category?.name ?? "Не известно",
                 transactionComment: comment.isEmpty ? nil : comment,
-                transactionAmount: NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: Decimal(string: transaction.amount) ?? 0)) ?? "",
+                transactionAmount: NumberFormatter.currency(symbol: currencyService.currentCurrency.symbol).string(from: NSDecimalNumber(decimal: Decimal(string: transaction.amount) ?? 0)) ?? "",
                 transactionDate: dateFormatted(date: transaction.transactionDate),
                 needChevron: false
             )

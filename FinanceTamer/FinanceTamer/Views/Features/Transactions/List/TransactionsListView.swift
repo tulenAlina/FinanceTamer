@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TransactionsListView: View {
     @EnvironmentObject var viewModel: TransactionsViewModel
+    @EnvironmentObject var currencyService: CurrencyService
     private let title: String
     
     init(title: String) {
@@ -26,9 +27,10 @@ struct TransactionsListView: View {
                         }
                         ListRowView(
                             categoryName: "Всего",
-                            transactionAmount: NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: viewModel.totalAmount)) ?? "0 ₽",
+                            transactionAmount: NumberFormatter.currency(symbol: currencyService.currentCurrency.symbol).string(from: NSDecimalNumber(decimal: viewModel.totalAmount)) ?? "0 ₽",
                             needChevron: false
                         )
+                        .environmentObject(currencyService)
                     } header: {
                         Text(title)
                             .font(.system(size: 34, weight: .bold))
@@ -41,6 +43,7 @@ struct TransactionsListView: View {
                     Section {
                         ForEach(transactions) { transaction in
                             TransactionRowNavigationView(transaction: transaction, viewModel: viewModel)
+                                .environmentObject(currencyService)
                         }
                     } header: {
                         Text("ОПЕРАЦИИ")
@@ -62,7 +65,20 @@ struct TransactionsListView: View {
                     // Автоматическое обновление при изменении транзакций
                 }
                 .alert("Ошибка", isPresented: Binding(
-                    get: { viewModel.error != nil && !(viewModel.error.map { viewModel.isCancelledError($0) } ?? false) },
+                    get: {
+                        if let error = viewModel.error {
+                            print("[ALERT BINDING] error type: \(type(of: error)), error: \(error)")
+                            if let networkError = error as? NetworkError {
+                                switch networkError {
+                                case .serverError(let code) where code == 404: return false
+                                case .decodingError: return false
+                                default: break
+                                }
+                            }
+                            return !(viewModel.isCancelledError(error))
+                        }
+                        return false
+                    },
                     set: { newValue in if !newValue { viewModel.error = nil } }
                 )) {
                     Button("OK", role: .cancel) { viewModel.error = nil }
@@ -89,12 +105,14 @@ struct TransactionsListView: View {
             categoriesService: CategoriesService(),
             selectedDirection: .outcome
         ))
+        .environmentObject(CurrencyService())
 }
 
 // Компонент для строки транзакции
 struct TransactionRowNavigationView: View {
     let transaction: TransactionResponse
     @ObservedObject var viewModel: TransactionsViewModel
+    @EnvironmentObject var currencyService: CurrencyService
     var body: some View {
         let category = viewModel.category(for: transaction)
         return NavigationLink {
@@ -105,16 +123,15 @@ struct TransactionRowNavigationView: View {
                 bankAccountsService: BankAccountsService(),
                 transactionsViewModel: viewModel
             )
-            .environmentObject(CurrencyService())
+            .environmentObject(currencyService)
             .environmentObject(viewModel)
-            // .onDisappear удалён, чтобы не было лишних вызовов загрузки
         } label: {
             VStack(spacing: 0) {
                 ListRowView(
                     emoji: category.map { String($0.emoji) } ?? "❓",
                     categoryName: category?.name ?? "Неизвестно",
                     transactionComment: transaction.comment?.isEmpty == false ? transaction.comment : nil,
-                    transactionAmount: NumberFormatter.currency(symbol: "₽").string(from: NSDecimalNumber(decimal: Decimal(string: transaction.amount) ?? 0)) ?? "",
+                    transactionAmount: NumberFormatter.currency(symbol: currencyService.currentCurrency.symbol).string(from: NSDecimalNumber(decimal: Decimal(string: transaction.amount) ?? 0)) ?? "",
                     needChevron: false
                 )
             }

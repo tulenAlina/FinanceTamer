@@ -221,6 +221,7 @@ class TransactionEditViewModel: ObservableObject {
             if isCancelledError(error) || Task.isCancelled {
                 return
             }
+            print("[ERROR SET] TransactionEditViewModel error: \(error)\nCallstack:\n\(Thread.callStackSymbols.joined(separator: "\n"))")
             self.error = error
             print("Error saving transaction: \(error)")
         }
@@ -254,16 +255,7 @@ class TransactionEditViewModel: ObservableObject {
         isLoading = true
         error = nil
         await transactionsViewModel?.deleteTransaction(withId: transaction.id)
-        
-        do {
-            try await transactionsService.deleteTransaction(id: transaction.id)
-            Task {
-                await transactionsViewModel?.loadTransactions()
-            }
-        } catch {
-            self.error = error
-            print("Error deleting transaction: \(error)")
-        }
+        // Удалён повторный вызов через transactionsService.deleteTransaction(id:)
         isLoading = false
     }
     

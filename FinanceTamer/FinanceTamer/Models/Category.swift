@@ -49,4 +49,3 @@ struct Category: Identifiable, Codable, Hashable {
     }
 }
 
-// Удалён extension Category.mockCategories, чтобы не использовать моковые категории.

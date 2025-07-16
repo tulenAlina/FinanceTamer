@@ -6,6 +6,7 @@ final class AnalysisViewController: UIViewController {
     
     var viewModel: MyHistoryViewModel
     var transactionsViewModel: TransactionsViewModel?
+    var currencySymbol: String = "₽"
     
     private var cachedCategoryStats: [(category: Category, amount: Decimal, percentage: Double)] = []
     private var cachedTransactionStats: [(transaction: TransactionResponse, percentage: Double)] = []
@@ -377,35 +378,29 @@ extension AnalysisViewController: UITableViewDataSource {
                 configureCellAppearance(cell, at: indexPath, forSection: 0)
                 return cell
             case 2:
-                cell = tableView.dequeueReusableCell(withIdentifier: SortingCell.reuseIdentifier, for: indexPath) as! SortingCell
+                let cell = tableView.dequeueReusableCell(withIdentifier: SortingCell.reuseIdentifier, for: indexPath) as! SortingCell
                 (cell as! SortingCell).configure(selectedSort: viewModel.sortType) { [weak self] newSort in
                     self?.viewModel.sortType = newSort
                     self?.updateCache()
                     self?.tableView.reloadData()
                 }
+                configureCellAppearance(cell, at: indexPath, forSection: 0)
+                return cell
             case 3:
-                cell = tableView.dequeueReusableCell(withIdentifier: TotalAmountCell.reuseIdentifier, for: indexPath) as! TotalAmountCell
-                let filteredTransactions = getFilteredTransactions()
-                let totalAmount = filteredTransactions.reduce(Decimal(0)) { $0 + (Decimal(string: $1.amount) ?? 0) }
-                (cell as! TotalAmountCell).configure(amount: totalAmount)
+                let cell = tableView.dequeueReusableCell(withIdentifier: TotalAmountCell.reuseIdentifier, for: indexPath) as! TotalAmountCell
+                let total = cachedCategoryStats.reduce(Decimal(0)) { $0 + $1.amount }
+                cell.configure(amount: total, currencySymbol: currencySymbol)
+                configureCellAppearance(cell, at: indexPath, forSection: 0)
+                return cell
             default:
-                fatalError("Unexpected row in section 0")
+                return UITableViewCell()
             }
-            
-            configureCellAppearance(cell, at: indexPath, forSection: 0)
-            return cell
-            
         case 1:
             let cell = tableView.dequeueReusableCell(withIdentifier: AnalysisCell.reuseIdentifier, for: indexPath) as! AnalysisCell
-            guard indexPath.row < cachedCategoryStats.count else {
-                return cell
-            }
-            let stats = cachedCategoryStats[indexPath.row]
-            cell.configure(category: stats.category, amount: stats.amount, percentage: stats.percentage)
-            
+            let stat = cachedCategoryStats[indexPath.row]
+            cell.configure(category: stat.category, amount: stat.amount, percentage: stat.percentage, currencySymbol: currencySymbol)
             configureCellAppearance(cell, at: indexPath, forSection: 1)
             return cell
-            
         case 2:
             let cell = tableView.dequeueReusableCell(withIdentifier: AnalysisCell.reuseIdentifier, for: indexPath) as! AnalysisCell
             guard indexPath.row < cachedTransactionStats.count else {
@@ -413,13 +408,13 @@ extension AnalysisViewController: UITableViewDataSource {
             }
             let stats = cachedTransactionStats[indexPath.row]
             let category = transactionsViewModel?.category(for: stats.transaction) ?? viewModel.category(for: stats.transaction)
-            cell.configure(category: category ?? Category(id: 0, name: "Не известно", emoji: "❓", direction: .outcome), amount: Decimal(string: stats.transaction.amount) ?? 0, percentage: stats.percentage)
+            cell.configure(category: category ?? Category(id: 0, name: "Не известно", emoji: "❓", direction: .outcome), amount: Decimal(string: stats.transaction.amount) ?? 0, percentage: stats.percentage, currencySymbol: currencySymbol)
             
             configureCellAppearance(cell, at: indexPath, forSection: 2)
             return cell
             
         default:
-            fatalError("Unexpected section")
+            return UITableViewCell()
         }
     }
 }

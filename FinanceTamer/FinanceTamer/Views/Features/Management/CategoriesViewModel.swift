@@ -37,6 +37,7 @@ final class CategoriesViewModel: ObservableObject {
             if isCancelledError(error) || Task.isCancelled {
                 return
             }
+            print("[ERROR SET] CategoriesViewModel error: \(error)\nCallstack:\n\(Thread.callStackSymbols.joined(separator: "\n"))")
             self.error = error
             print("Ошибка загрузки категорий: \(error)")
         }

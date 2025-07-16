@@ -93,6 +93,7 @@ final class MyHistoryViewModel: ObservableObject {
             if isCancelledError(error) || Task.isCancelled {
                 return
             }
+            print("[ERROR SET] MyHistoryViewModel error: \(error)\nCallstack:\n\(Thread.callStackSymbols.joined(separator: "\n"))")
             self.error = error
             print("Ошибка загрузки:", error.localizedDescription)
         }

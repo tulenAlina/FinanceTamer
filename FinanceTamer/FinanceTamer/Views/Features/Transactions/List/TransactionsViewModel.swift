@@ -6,7 +6,7 @@ final class TransactionsViewModel: ObservableObject {
     @Published var displayedTransactions: [TransactionResponse] = []
     @Published var allTransactions: [TransactionResponse] = []
     @Published var categories: [Category] = []
-    @Published var isLoading = false
+    @Published var isLoading = true
     @Published var error: Error?
     @Published var saveSuccess = false
     @Published var lastUpdateTime = Date()
@@ -16,6 +16,8 @@ final class TransactionsViewModel: ObservableObject {
             sortTransactions()
         }
     }
+    
+    private var isDeleting = false
     
     var totalAmount: Decimal {
         displayedTransactions.reduce(0) { $0 + (Decimal(string: $1.amount) ?? 0) }
@@ -108,6 +110,7 @@ final class TransactionsViewModel: ObservableObject {
                 }
                 print("Ошибка загрузки: \(error)")
                 await MainActor.run {
+                    print("[ERROR SET] TransactionsViewModel error: \(error)\nCallstack:\n\(Thread.callStackSymbols.joined(separator: "\n"))")
                     self.error = error
                 }
             }
@@ -142,6 +145,9 @@ final class TransactionsViewModel: ObservableObject {
     }
     
     func deleteTransaction(withId id: Int) async {
+        if isDeleting { print("[Удаление] Повторный вызов проигнорирован"); return }
+        isDeleting = true
+        defer { isDeleting = false }
         let transactionToDelete = allTransactions.first { $0.id == id }
         allTransactions.removeAll { $0.id == id }
         filterTransactions()
@@ -149,18 +155,23 @@ final class TransactionsViewModel: ObservableObject {
             try await transactionsService.deleteTransaction(id: id)
             await loadTransactions()
         } catch {
-            if let networkError = error as? NetworkError,
-               case .serverError(let code) = networkError, code == 404 {
-                print("Транзакция уже удалена или не найдена, просто обновляем список.")
-                await loadTransactions()
-                return
-            }
-            if let transaction = transactionToDelete {
-                allTransactions.append(transaction)
-                filterTransactions()
+            if let networkError = error as? NetworkError {
+                switch networkError {
+                case .serverError(let code) where code == 404:
+                    print("[Удаление] 404 Not Found: \(error) | Тип: \(type(of: error))")
+                    await loadTransactions()
+                    return // Не кладём ошибку в self.error
+                case .decodingError:
+                    print("[Удаление] DecodingError: \(error) | Тип: \(type(of: error))")
+                    await loadTransactions()
+                    return // Не кладём ошибку в self.error
+                default:
+                    break
+                }
             }
             print("Ошибка удаления транзакции: \(error)")
             await MainActor.run {
+                print("[ALERT DEBUG] error type: \(type(of: error)), error: \(error)")
                 self.error = error
             }
         }

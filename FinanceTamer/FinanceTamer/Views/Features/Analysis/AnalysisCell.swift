@@ -76,7 +76,7 @@ final class AnalysisCell: UITableViewCell {
         ])
     }
     
-    func configure(category: Category, amount: Decimal, percentage: Double, currencySymbol: String = "₽") {
+    func configure(category: Category, amount: Decimal, percentage: Double, currencySymbol: String) {
         emojiLabel.text = String(category.emoji)
         categoryLabel.text = category.name
         

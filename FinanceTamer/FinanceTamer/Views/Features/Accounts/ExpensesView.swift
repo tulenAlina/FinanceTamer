@@ -16,8 +16,6 @@ struct ExpensesView: View {
                         transactionsViewModel.switchDirection(to: .outcome)
                     }
                 
-                // Удалён дублирующийся индикатор загрузки
-                
                 VStack {
                     Spacer()
                     HStack {

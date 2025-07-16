@@ -3,7 +3,6 @@ import SwiftUI
 @MainActor
 class ScoreViewModel: ObservableObject {
     private let accountsService = BankAccountsService()
-    private let currencyService = CurrencyService()
     private let transactionsService = TransactionsService()
     
     @Published var balance: Decimal = 0
@@ -28,19 +27,6 @@ class ScoreViewModel: ObservableObject {
             } else {
                 UserDefaults.standard.removeObject(forKey: lastManualBalanceUpdateKey)
             }
-        }
-    }
-    
-    var currency: Currency {
-        get { currencyService.currentCurrency }
-        set { currencyService.currentCurrency = newValue }
-    }
-    
-    var currencySymbol: String {
-        switch currency {
-        case .rub: return "₽"
-        case .usd: return "$"
-        case .eur: return "€"
         }
     }
     
@@ -89,7 +75,6 @@ class ScoreViewModel: ObservableObject {
                 self.originalBalance = computedBalance
                 if isInitialLoad {
                     if let currencyEnum = Currency(rawValue: account.currency) {
-                        currency = currencyEnum
                     }
                     isInitialLoad = false
                 }
@@ -120,7 +105,8 @@ class ScoreViewModel: ObservableObject {
                     let request = BankAccountsService.AccountUpdateRequest(
                         name: account.name,
                         balance: String(format: "%.2f", NSDecimalNumber(decimal: newBalance).doubleValue),
-                        currency: currency.rawValue
+                        currency: // currency.rawValue // Удалено
+                        account.currency // Используем текущую валюту из аккаунта
                     )
                     _ = try await accountsService.updateAccount(id: account.id, request: request)
                     // После успешного обновления:
@@ -142,10 +128,10 @@ class ScoreViewModel: ObservableObject {
     private func updateBalanceString() {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 2  // Ограничиваем до 2 знаков после запятой
+        formatter.maximumFractionDigits = 2
         formatter.minimumFractionDigits = 0
-        formatter.decimalSeparator = ","    // Используем запятую как разделитель
-        formatter.groupingSeparator = " "   // Разделитель тысяч
+        formatter.decimalSeparator = ","  
+        formatter.groupingSeparator = " "
         balanceString = formatter.string(from: balance as NSDecimalNumber) ?? ""
     }
     

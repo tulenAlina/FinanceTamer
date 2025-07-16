@@ -8,6 +8,7 @@ struct ScoreView: View {
     @State private var balanceText: String = ""
     @State private var isBalanceHidden = true
     @FocusState private var isBalanceFocused: Bool
+    @EnvironmentObject var currencyService: CurrencyService
     
     private var errorBinding: Binding<String?> {
         Binding(
@@ -25,7 +26,7 @@ struct ScoreView: View {
                         balanceText: $balanceText,
                         isBalanceFocused: _isBalanceFocused,
                         isBalanceHidden: $isBalanceHidden,
-                        currencySymbol: viewModel.currencySymbol,
+                        currencySymbol: currencyService.currentCurrency.symbol,
                         viewModel: viewModel,
                         filterBalanceInput: filterBalanceInput
                     )
@@ -40,7 +41,7 @@ struct ScoreView: View {
                     
                     CurrencyRow(
                         isEditing: isEditing,
-                        currency: viewModel.currency,
+                        currency: currencyService.currentCurrency,
                         onTap: { showCurrencyPicker = true }
                     )
                     .listRowBackground(isEditing ? Color(.systemBackground) : Color.accentColor.opacity(0.2))
@@ -89,8 +90,7 @@ struct ScoreView: View {
                                 showCurrencyPicker = false
                             }
                         
-                        CurrencyPickerView(selectedCurrency: $viewModel.currency)
-                            .environmentObject(CurrencyService())
+                        CurrencyPickerView(selectedCurrency: $currencyService.currentCurrency)
                     }
                 }
             )
