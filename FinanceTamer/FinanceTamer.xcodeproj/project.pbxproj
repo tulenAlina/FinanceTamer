@@ -20,6 +20,8 @@
 		8726776E2E208BE600186972 /* TransactionEditViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8726776D2E208BE500186972 /* TransactionEditViewModel.swift */; };
 		872678202E26C21600186972 /* NetworkClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8726781F2E26C20D00186972 /* NetworkClient.swift */; };
 		872678222E26C4B600186972 /* EmptyResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = 872678212E26C4AC00186972 /* EmptyResponse.swift */; };
+		87459AE42E2F074000D91F8B /* PieChart in Frameworks */ = {isa = PBXBuildFile; productRef = 87459AE32E2F074000D91F8B /* PieChart */; };
+		87459AE72E2FB8E100D91F8B /* PieChart in Frameworks */ = {isa = PBXBuildFile; productRef = 87459AE62E2FB8E100D91F8B /* PieChart */; };
 		876617692DFB0C2A008001B4 /* FinanceTamerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 876617682DFB0C2A008001B4 /* FinanceTamerApp.swift */; };
 		8766176B2DFB0C2A008001B4 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766176A2DFB0C2A008001B4 /* ContentView.swift */; };
 		876617702DFB0C2C008001B4 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8766176F2DFB0C2C008001B4 /* Preview Assets.xcassets */; };
@@ -35,6 +37,13 @@
 		8766178D2DFB971E008001B4 /* Transaction+CSV.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766178C2DFB971E008001B4 /* Transaction+CSV.swift */; };
 		876617982DFB9A00008001B4 /* FinanceTamerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 876617972DFB9A00008001B4 /* FinanceTamerTests.swift */; };
 		8766179F2DFB9A1B008001B4 /* TransactionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8766179E2DFB9A1B008001B4 /* TransactionTests.swift */; };
+		877EC5862E2FBFCE0005565B /* PieChart in Frameworks */ = {isa = PBXBuildFile; productRef = 877EC5852E2FBFCE0005565B /* PieChart */; };
+		877EC5892E2FC0050005565B /* PieChart in Frameworks */ = {isa = PBXBuildFile; productRef = 877EC5882E2FC0050005565B /* PieChart */; };
+		877EC58B2E2FC1480005565B /* PieChart in Frameworks */ = {isa = PBXBuildFile; productRef = 877EC58A2E2FC1480005565B /* PieChart */; };
+		877EC58D2E2FC1AC0005565B /* PieChart in Frameworks */ = {isa = PBXBuildFile; productRef = 877EC58C2E2FC1AC0005565B /* PieChart */; };
+		877EC58F2E2FC2C90005565B /* PieChartCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 877EC58E2E2FC2C80005565B /* PieChartCell.swift */; };
+		877EC5912E2FC2F60005565B /* PieChart in Frameworks */ = {isa = PBXBuildFile; productRef = 877EC5902E2FC2F60005565B /* PieChart */; };
+		877EC5942E2FC33E0005565B /* PieChart in Frameworks */ = {isa = PBXBuildFile; productRef = 877EC5932E2FC33E0005565B /* PieChart */; };
 		87B750482E05B19B000C66F2 /* AppErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B750472E05B196000C66F2 /* AppErrors.swift */; };
 		87B7504A2E05B1A4000C66F2 /* ParsingErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B750492E05B1A2000C66F2 /* ParsingErrors.swift */; };
 		87B7504E2E05D91A000C66F2 /* FileErrors.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7504D2E05D902000C66F2 /* FileErrors.swift */; };
@@ -105,6 +114,7 @@
 		876617952DFB9A00008001B4 /* FinanceTamerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = FinanceTamerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		876617972DFB9A00008001B4 /* FinanceTamerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceTamerTests.swift; sourceTree = "<group>"; };
 		8766179E2DFB9A1B008001B4 /* TransactionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionTests.swift; sourceTree = "<group>"; };
+		877EC58E2E2FC2C80005565B /* PieChartCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PieChartCell.swift; sourceTree = "<group>"; };
 		87B750472E05B196000C66F2 /* AppErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppErrors.swift; sourceTree = "<group>"; };
 		87B750492E05B1A2000C66F2 /* ParsingErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParsingErrors.swift; sourceTree = "<group>"; };
 		87B7504D2E05D902000C66F2 /* FileErrors.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileErrors.swift; sourceTree = "<group>"; };
@@ -143,6 +153,14 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				877EC5942E2FC33E0005565B /* PieChart in Frameworks */,
+				877EC5892E2FC0050005565B /* PieChart in Frameworks */,
+				87459AE72E2FB8E100D91F8B /* PieChart in Frameworks */,
+				877EC58B2E2FC1480005565B /* PieChart in Frameworks */,
+				877EC5862E2FBFCE0005565B /* PieChart in Frameworks */,
+				877EC5912E2FC2F60005565B /* PieChart in Frameworks */,
+				877EC58D2E2FC1AC0005565B /* PieChart in Frameworks */,
+				87459AE42E2F074000D91F8B /* PieChart in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -156,6 +174,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		87459AE12E2F04A500D91F8B /* LocalSPM */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = LocalSPM;
+			sourceTree = "<group>";
+		};
 		8766175C2DFB0C29008001B4 = {
 			isa = PBXGroup;
 			children = (
@@ -177,6 +202,7 @@
 		876617672DFB0C2A008001B4 /* FinanceTamer */ = {
 			isa = PBXGroup;
 			children = (
+				87459AE12E2F04A500D91F8B /* LocalSPM */,
 				87B751AC2E06459D000C66F2 /* Resources */,
 				87B751242E06374C000C66F2 /* Views */,
 				87B750462E05B178000C66F2 /* Errors */,
@@ -304,6 +330,7 @@
 		87B751B32E066265000C66F2 /* Analysis */ = {
 			isa = PBXGroup;
 			children = (
+				877EC58E2E2FC2C80005565B /* PieChartCell.swift */,
 				872677082E1D6BBD00186972 /* AnalysisCell.swift */,
 				872677062E1D6BA700186972 /* TotalAmountCell.swift */,
 				872677042E1D6B9000186972 /* SortingCell.swift */,
@@ -466,6 +493,9 @@
 				ru,
 			);
 			mainGroup = 8766175C2DFB0C29008001B4;
+			packageReferences = (
+				877EC5922E2FC33E0005565B /* XCLocalSwiftPackageReference "FinanceTamer/LocalSPM/Utilities" */,
+			);
 			productRefGroup = 876617662DFB0C2A008001B4 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -551,6 +581,7 @@
 				87B751812E06454D000C66F2 /* AnalysisView.swift in Sources */,
 				87B7532D2E0ED831000C66F2 /* ShakeDetector.swift in Sources */,
 				876617872DFB8231008001B4 /* CategoriesService.swift in Sources */,
+				877EC58F2E2FC2C90005565B /* PieChartCell.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -815,6 +846,48 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		877EC5922E2FC33E0005565B /* XCLocalSwiftPackageReference "FinanceTamer/LocalSPM/Utilities" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = FinanceTamer/LocalSPM/Utilities;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		87459AE32E2F074000D91F8B /* PieChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PieChart;
+		};
+		87459AE62E2FB8E100D91F8B /* PieChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PieChart;
+		};
+		877EC5852E2FBFCE0005565B /* PieChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PieChart;
+		};
+		877EC5882E2FC0050005565B /* PieChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PieChart;
+		};
+		877EC58A2E2FC1480005565B /* PieChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PieChart;
+		};
+		877EC58C2E2FC1AC0005565B /* PieChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PieChart;
+		};
+		877EC5902E2FC2F60005565B /* PieChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PieChart;
+		};
+		877EC5932E2FC33E0005565B /* PieChart */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = PieChart;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8766175D2DFB0C2A008001B4 /* Project object */;
 }
