@@ -71,6 +71,8 @@
 		87B7525B2E0E0CCE000C66F2 /* CurrencyService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7525A2E0E0CCC000C66F2 /* CurrencyService.swift */; };
 		87B7532B2E0ED731000C66F2 /* SpoilerText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7532A2E0ED730000C66F2 /* SpoilerText.swift */; };
 		87B7532D2E0ED831000C66F2 /* ShakeDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87B7532C2E0ED82F000C66F2 /* ShakeDetector.swift */; };
+		87C8530D2E3043260089263B /* BalanceData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C8530C2E3043250089263B /* BalanceData.swift */; };
+		87C8530F2E3043760089263B /* BalanceChartView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C8530E2E3043750089263B /* BalanceChartView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -142,6 +144,8 @@
 		87B7525A2E0E0CCC000C66F2 /* CurrencyService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CurrencyService.swift; sourceTree = "<group>"; };
 		87B7532A2E0ED730000C66F2 /* SpoilerText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpoilerText.swift; sourceTree = "<group>"; };
 		87B7532C2E0ED82F000C66F2 /* ShakeDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShakeDetector.swift; sourceTree = "<group>"; };
+		87C8530C2E3043250089263B /* BalanceData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceData.swift; sourceTree = "<group>"; };
+		87C8530E2E3043750089263B /* BalanceChartView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BalanceChartView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -353,6 +357,8 @@
 		87B751B52E066280000C66F2 /* Management */ = {
 			isa = PBXGroup;
 			children = (
+				87C8530E2E3043750089263B /* BalanceChartView.swift */,
+				87C8530C2E3043250089263B /* BalanceData.swift */,
 				872676C92E1440D000186972 /* CategoriesViewModel.swift */,
 				87B752542E0AD3F1000C66F2 /* ScoreViewModel.swift */,
 				87B751822E06454D000C66F2 /* CategoriesView.swift */,
@@ -534,6 +540,7 @@
 				876617832DFB7B1B008001B4 /* Transaction+JSON.swift in Sources */,
 				87B7519F2E06454D000C66F2 /* ScoreView.swift in Sources */,
 				87B752552E0AD3F8000C66F2 /* ScoreViewModel.swift in Sources */,
+				87C8530F2E3043760089263B /* BalanceChartView.swift in Sources */,
 				87B7504A2E05B1A4000C66F2 /* ParsingErrors.swift in Sources */,
 				87B750482E05B19B000C66F2 /* AppErrors.swift in Sources */,
 				872676CE2E14607800186972 /* FuzzySearch.swift in Sources */,
@@ -574,6 +581,7 @@
 				87B7519C2E06454D000C66F2 /* MyHistoryViewModel.swift in Sources */,
 				872677052E1D6B9100186972 /* SortingCell.swift in Sources */,
 				87B7519D2E06454D000C66F2 /* MyHistoryView.swift in Sources */,
+				87C8530D2E3043260089263B /* BalanceData.swift in Sources */,
 				87B751982E06454D000C66F2 /* IncomeHistoryView.swift in Sources */,
 				872676CA2E1440D400186972 /* CategoriesViewModel.swift in Sources */,
 				87B751992E06454D000C66F2 /* IncomeView.swift in Sources */,
