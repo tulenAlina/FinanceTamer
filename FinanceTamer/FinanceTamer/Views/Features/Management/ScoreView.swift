@@ -45,6 +45,11 @@ struct ScoreView: View {
                         onTap: { showCurrencyPicker = true }
                     )
                     .listRowBackground(isEditing ? Color(.systemBackground) : Color.accentColor.opacity(0.2))
+                    if !isEditing {
+                        BalanceChartView(data: viewModel.balanceHistory)
+                            .listRowBackground(Color.clear)
+                            .listRowInsets(EdgeInsets())
+                    }
                 }
             }
             .listStyle(.insetGrouped)
@@ -98,6 +103,7 @@ struct ScoreView: View {
                 viewModel.loadAccount()
             }
             .onReceive(shakeDetector.$shaken) { _ in
+                viewModel.calculateBalanceHistory()
                 guard !isEditing else { return }
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     isBalanceHidden.toggle()

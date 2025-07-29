@@ -1,4 +1,5 @@
 import UIKit
+import PieChart
 
 final class AnalysisViewController: UIViewController {
     
@@ -34,12 +35,13 @@ final class AnalysisViewController: UIViewController {
         tableView.register(DatePickerCell.self, forCellReuseIdentifier: DatePickerCell.reuseIdentifier)
         tableView.register(TotalAmountCell.self, forCellReuseIdentifier: TotalAmountCell.reuseIdentifier)
         tableView.register(SortingCell.self, forCellReuseIdentifier: SortingCell.reuseIdentifier)
+        tableView.register(PieChartCell.self, forCellReuseIdentifier: PieChartCell.reuseIdentifier)
         tableView.dataSource = self
         tableView.delegate = self
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .systemGroupedBackground
-        tableView.separatorStyle = .singleLine
-        tableView.separatorInset = UIEdgeInsets(top: 0, left: 54, bottom: 0, right: 0)
+        //tableView.separatorStyle = .singleLine
+        //tableView.separatorInset = UIEdgeInsets(top: 0, left: 54, bottom: 0, right: 0)
         tableView.sectionHeaderHeight = UITableView.automaticDimension
         tableView.sectionFooterHeight = UITableView.automaticDimension
         tableView.contentInset = UIEdgeInsets(top: 0, left: 0, bottom: 20, right: 0)
@@ -50,12 +52,26 @@ final class AnalysisViewController: UIViewController {
     private let horizontalInset: CGFloat = 16
     private let cornerRadius: CGFloat = 10
     
+    private var lastChartUpdateTime = Date()
+    private let chartUpdateDebounceInterval: TimeInterval = 0.3
+    private var isUpdatingChart = false
+    
     private var activityIndicator: UIActivityIndicatorView = {
         let indicator = UIActivityIndicatorView(style: .large)
         indicator.hidesWhenStopped = true
         indicator.translatesAutoresizingMaskIntoConstraints = false
         return indicator
     }()
+    
+    private var pieChartEntities: [Entity] {
+        let topCategories = Array(cachedCategoryStats.prefix(5))
+        let otherValue = cachedCategoryStats.dropFirst(5).reduce(Decimal(0)) { $0 + $1.amount }
+        var entities = topCategories.map { Entity(value: $0.amount, label: $0.category.name) }
+        if otherValue > 0 {
+            entities.append(Entity(value: otherValue, label: "Остальные"))
+        }
+        return entities
+    }
     
     // MARK: - Initialization
     
@@ -68,7 +84,18 @@ final class AnalysisViewController: UIViewController {
         fatalError("init(coder:) has not been implemented")
     }
     
-    // MARK: - Lifecycle
+    private lazy var pieChartView: PieChartView = {
+        let view = PieChartView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
+    
+    private lazy var chartContainer: UIView = {
+        let view = UIView()
+        view.backgroundColor = .clear
+        view.translatesAutoresizingMaskIntoConstraints = false
+        return view
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -76,13 +103,13 @@ final class AnalysisViewController: UIViewController {
         setupNavigationBar()
         setupActivityIndicator()
         loadData()
+        //tableView.separatorStyle = .none
     }
     
     // MARK: - Private Methods
     
     private func setupUI() {
         view.addSubview(tableView)
-        
         NSLayoutConstraint.activate([
             tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: horizontalInset),
@@ -134,10 +161,51 @@ final class AnalysisViewController: UIViewController {
         }
     }
     
+    private func updateSorting(_ newSort: SortType) {
+        guard newSort != viewModel.sortType else { return }
+        
+        viewModel.sortType = newSort
+        updateCache()
+        
+        // Плавное обновление только секции с категориями
+        UIView.transition(
+            with: tableView,
+            duration: 0.3,
+            options: .transitionCrossDissolve,
+            animations: {
+                self.tableView.reloadSections(IndexSet(integer: 2), with: .automatic)
+            }
+        )
+    }
+    
     private func updateCache() {
         cachedCategoryStats = getCategoryStats()
         cachedTransactionStats = getTransactionStats()
         lastUpdateTime = Date()
+        updatePieChart()
+    }
+    
+    private var isChartUpdating = false
+    
+    private func updatePieChart() {
+        let now = Date()
+        guard now.timeIntervalSince(lastChartUpdateTime) > chartUpdateDebounceInterval else {
+            return
+        }
+        
+        lastChartUpdateTime = now
+        
+        let topCategories = Array(cachedCategoryStats.prefix(5))
+        let otherValue = cachedCategoryStats.dropFirst(5).reduce(Decimal(0)) { $0 + $1.amount }
+        
+        var entities = topCategories.map { Entity(value: $0.amount, label: $0.category.name) }
+        if otherValue > 0 {
+            entities.append(Entity(value: otherValue, label: "Остальные"))
+        }
+        
+        DispatchQueue.main.async { [weak self] in
+            self?.pieChartView.entities = entities
+        }
     }
     
     private func showError(_ error: Error) {
@@ -230,7 +298,7 @@ final class AnalysisViewController: UIViewController {
         }
         return filteredTransactions
     }
-
+    
     private func getCategoryStats() -> [(category: Category, amount: Decimal, percentage: Double)] {
         guard let transactionsVM = transactionsViewModel else { return [] }
         let isoFormatter = ISO8601DateFormatter()
@@ -269,7 +337,7 @@ final class AnalysisViewController: UIViewController {
         }
         return sortedResult
     }
-
+    
     private func getTransactionStats() -> [(transaction: TransactionResponse, percentage: Double)] {
         let isoFormatter = ISO8601DateFormatter()
         let filteredTransactions = getFilteredTransactions()
@@ -346,14 +414,15 @@ final class AnalysisViewController: UIViewController {
 
 extension AnalysisViewController: UITableViewDataSource {
     func numberOfSections(in tableView: UITableView) -> Int {
-        return 3
+        return 4 // 0 — фильтры, 1 — график, 2 — категории, 3 — операции
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         switch section {
-        case 0: return 4
-        case 1: return cachedCategoryStats.count
-        case 2: return cachedTransactionStats.count
+        case 0: return 4 // дата начала, дата конца, сортировка, сумма
+        case 1: return 1 // PieChartCell
+        case 2: return cachedCategoryStats.count
+        case 3: return cachedTransactionStats.count
         default: return 0
         }
     }
@@ -361,7 +430,6 @@ extension AnalysisViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         switch indexPath.section {
         case 0:
-            let cell: UITableViewCell
             switch indexPath.row {
             case 0:
                 let cell = tableView.dequeueReusableCell(withIdentifier: DatePickerCell.reuseIdentifier, for: indexPath) as! DatePickerCell
@@ -379,10 +447,8 @@ extension AnalysisViewController: UITableViewDataSource {
                 return cell
             case 2:
                 let cell = tableView.dequeueReusableCell(withIdentifier: SortingCell.reuseIdentifier, for: indexPath) as! SortingCell
-                (cell as! SortingCell).configure(selectedSort: viewModel.sortType) { [weak self] newSort in
-                    self?.viewModel.sortType = newSort
-                    self?.updateCache()
-                    self?.tableView.reloadData()
+                cell.configure(selectedSort: viewModel.sortType) { [weak self] newSort in
+                    self?.updateSorting(newSort)
                 }
                 configureCellAppearance(cell, at: indexPath, forSection: 0)
                 return cell
@@ -396,12 +462,17 @@ extension AnalysisViewController: UITableViewDataSource {
                 return UITableViewCell()
             }
         case 1:
+            let cell = tableView.dequeueReusableCell(withIdentifier: PieChartCell.reuseIdentifier, for: indexPath) as! PieChartCell
+            cell.configure(with: pieChartEntities)
+            cell.selectionStyle = .none
+            return cell
+        case 2:
             let cell = tableView.dequeueReusableCell(withIdentifier: AnalysisCell.reuseIdentifier, for: indexPath) as! AnalysisCell
             let stat = cachedCategoryStats[indexPath.row]
             cell.configure(category: stat.category, amount: stat.amount, percentage: stat.percentage, currencySymbol: currencySymbol)
-            configureCellAppearance(cell, at: indexPath, forSection: 1)
+            configureCellAppearance(cell, at: indexPath, forSection: 2)
             return cell
-        case 2:
+        case 3:
             let cell = tableView.dequeueReusableCell(withIdentifier: AnalysisCell.reuseIdentifier, for: indexPath) as! AnalysisCell
             guard indexPath.row < cachedTransactionStats.count else {
                 return cell
@@ -409,10 +480,8 @@ extension AnalysisViewController: UITableViewDataSource {
             let stats = cachedTransactionStats[indexPath.row]
             let category = transactionsViewModel?.category(for: stats.transaction) ?? viewModel.category(for: stats.transaction)
             cell.configure(category: category ?? Category(id: 0, name: "Не известно", emoji: "❓", direction: .outcome), amount: Decimal(string: stats.transaction.amount) ?? 0, percentage: stats.percentage, currencySymbol: currencySymbol)
-            
-            configureCellAppearance(cell, at: indexPath, forSection: 2)
+            configureCellAppearance(cell, at: indexPath, forSection: 3)
             return cell
-            
         default:
             return UITableViewCell()
         }
@@ -431,50 +500,43 @@ extension AnalysisViewController: UITableViewDelegate {
             label.font = UIFont.systemFont(ofSize: 34, weight: .bold)
             label.translatesAutoresizingMaskIntoConstraints = false
             header.addSubview(label)
-            
             NSLayoutConstraint.activate([
                 label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 0),
                 label.trailingAnchor.constraint(equalTo: header.trailingAnchor, constant: 0),
                 label.topAnchor.constraint(equalTo: header.topAnchor, constant: 10),
                 label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -20)
             ])
-            
             return header
-            
         case 1:
-            let header = UIView()
-            let label = UILabel()
-            label.text = "КАТЕГОРИИ  "
-            label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
-            label.textColor = .secondaryLabel
-            label.translatesAutoresizingMaskIntoConstraints = false
-            header.addSubview(label)
-            
-            NSLayoutConstraint.activate([
-                label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: horizontalInset),
-                label.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
-                label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8)
-            ])
-            
-            return header
-            
+            return nil // Без заголовка для графика
         case 2:
             let header = UIView()
             let label = UILabel()
-            label.text = "ОПЕРАЦИИ  "
+            label.text = "КАТЕГОРИИ"
             label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
             label.textColor = .secondaryLabel
             label.translatesAutoresizingMaskIntoConstraints = false
             header.addSubview(label)
-            
             NSLayoutConstraint.activate([
                 label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: horizontalInset),
                 label.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
                 label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8)
             ])
-            
             return header
-            
+        case 3:
+            let header = UIView()
+            let label = UILabel()
+            label.text = "ОПЕРАЦИИ"
+            label.font = UIFont.systemFont(ofSize: 13, weight: .regular)
+            label.textColor = .secondaryLabel
+            label.translatesAutoresizingMaskIntoConstraints = false
+            header.addSubview(label)
+            NSLayoutConstraint.activate([
+                label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: horizontalInset),
+                label.topAnchor.constraint(equalTo: header.topAnchor, constant: 16),
+                label.bottomAnchor.constraint(equalTo: header.bottomAnchor, constant: -8)
+            ])
+            return header
         default:
             return nil
         }
@@ -483,19 +545,18 @@ extension AnalysisViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
         switch section {
         case 0: return 54
-        case 1: return 44
+        case 1: return 0 // Без заголовка для графика
         case 2: return 44
+        case 3: return 44
         default: return 0
         }
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        switch indexPath.section {
-        case 0: return 44
-        case 1: return 44
-        case 2: return 44
-        default: return 44
+        if indexPath.section == 1 {
+            return 200 // Высота для PieChartCell
         }
+        return 44
     }
     
     func tableView(_ tableView: UITableView, heightForFooterInSection section: Int) -> CGFloat {

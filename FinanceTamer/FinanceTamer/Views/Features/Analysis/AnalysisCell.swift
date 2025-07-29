@@ -46,6 +46,10 @@ final class AnalysisCell: UITableViewCell {
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
         setupUI()
+        
+        separatorInset = UIEdgeInsets(top: 0, left: 54, bottom: 0, right: 0)
+        preservesSuperviewLayoutMargins = false
+        layoutMargins = .zero
     }
     
     required init?(coder: NSCoder) {

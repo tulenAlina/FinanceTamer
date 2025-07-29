@@ -12,6 +12,8 @@ class ScoreViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var isLoading: Bool = false
     @Published var transactions: [TransactionResponse] = []
+    @Published var balanceHistory: [BalanceData] = []
+    
     private let lastManualBalanceUpdateKey = "lastManualBalanceUpdateKey"
     private(set) var lastManualBalanceUpdate: Date? {
         get {
@@ -53,8 +55,23 @@ class ScoreViewModel: ObservableObject {
                 let accounts = try await accountsService.getAllAccounts()
                 guard let account = accounts.first else { return }
                 let accountId = account.id
-                let allTransactions = try await transactionsService.getTransactions(accountId: accountId)
+                
+                let endDate = Date()
+                let startDate = Calendar.current.date(byAdding: .day, value: -30, to: endDate) ?? endDate
+                
+                let dateFormatter = ISO8601DateFormatter()
+                dateFormatter.formatOptions = [.withFullDate]
+                let startDateString = dateFormatter.string(from: startDate)
+                let endDateString = dateFormatter.string(from: endDate)
+                
+                
+                let allTransactions = try await transactionsService.getTransactions(
+                    accountId: accountId,
+                    startDate: startDateString,
+                    endDate: endDateString
+                )
                 self.transactions = allTransactions
+                
                 var computedBalance = Decimal(string: account.balance) ?? 0
                 if let lastManual = lastManualBalanceUpdate {
                     let newTransactions = allTransactions.filter { transaction in
@@ -74,11 +91,12 @@ class ScoreViewModel: ObservableObject {
                 self.balance = computedBalance
                 self.originalBalance = computedBalance
                 if isInitialLoad {
-                    if let currencyEnum = Currency(rawValue: account.currency) {
+                    if Currency(rawValue: account.currency) != nil {
                     }
                     isInitialLoad = false
                 }
                 updateBalanceString()
+                calculateBalanceHistory()
             } catch {
                 if isCancelledError(error) || Task.isCancelled {
                     return
@@ -105,11 +123,10 @@ class ScoreViewModel: ObservableObject {
                     let request = BankAccountsService.AccountUpdateRequest(
                         name: account.name,
                         balance: String(format: "%.2f", NSDecimalNumber(decimal: newBalance).doubleValue),
-                        currency: // currency.rawValue // Удалено
-                        account.currency // Используем текущую валюту из аккаунта
+                        currency:
+                        account.currency
                     )
                     _ = try await accountsService.updateAccount(id: account.id, request: request)
-                    // После успешного обновления:
                     self.lastManualBalanceUpdate = Date()
                     balance = newBalance
                     originalBalance = newBalance
@@ -130,7 +147,7 @@ class ScoreViewModel: ObservableObject {
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 2
         formatter.minimumFractionDigits = 0
-        formatter.decimalSeparator = ","  
+        formatter.decimalSeparator = ","
         formatter.groupingSeparator = " "
         balanceString = formatter.string(from: balance as NSDecimalNumber) ?? ""
     }
@@ -138,14 +155,55 @@ class ScoreViewModel: ObservableObject {
     func refreshAccount() async {
         isLoading = true
         defer { isLoading = false }
-        do {
-            await loadAccount()
-        } catch {
-            if isCancelledError(error) || Task.isCancelled {
-                return
+        loadAccount()
+    }
+    
+    func calculateBalanceHistory() {
+        guard !transactions.isEmpty else {
+            balanceHistory = []
+            return
+        }
+        
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        guard let thirtyDaysAgo = calendar.date(byAdding: .day, value: -30, to: today) else {
+            balanceHistory = []
+            return
+        }
+        
+        var dailyTransactions: [Date: Decimal] = [:]
+        
+        for transaction in transactions {
+            guard let date = ISO8601DateFormatter().date(from: transaction.transactionDate),
+                  let amount = Decimal(string: transaction.amount) else {
+                continue 
             }
-            errorMessage = error.localizedDescription
-            print("Error refreshing account: \(error)")
+            
+            let dayStart = calendar.startOfDay(for: date)
+            
+            guard dayStart >= thirtyDaysAgo && dayStart <= today else {
+                continue 
+            }
+            
+            let change = transaction.category.direction == .income ? amount : -amount
+            dailyTransactions[dayStart, default: 0] += change
+        }
+        
+        var dates: [Date] = []
+        var currentDate = thirtyDaysAgo
+        while currentDate <= today {
+            dates.append(currentDate)
+            guard let nextDate = calendar.date(byAdding: .day, value: 1, to: currentDate) else { break }
+            currentDate = nextDate
+        }
+        
+        balanceHistory = dates.map { date in
+            let dailyBalance = dailyTransactions[date] ?? 0
+            return BalanceData(
+                id: UUID(), 
+                date: date,
+                originalBalance: dailyBalance
+            )
         }
     }
 }
